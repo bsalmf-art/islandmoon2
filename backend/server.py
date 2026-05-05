@@ -66,6 +66,13 @@ class UserRegister(BaseModel):
     password: str = Field(min_length=6, max_length=128)
 
 
+class AdminRegister(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=128)
+    admin_code: str = Field(min_length=4, max_length=128)
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -189,6 +196,32 @@ async def register(payload: UserRegister, response: Response):
         "password_hash": hash_password(payload.password),
         "role": "teacher",
         "avatar_color": pick_color(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(user_doc)
+    token = create_access_token(user_doc["id"], email)
+    set_auth_cookie(response, token)
+    user_doc.pop("password_hash", None)
+    user_doc.pop("_id", None)
+    return UserOut(**user_doc)
+
+
+@api_router.post("/auth/admin-register", response_model=UserOut)
+async def admin_register(payload: AdminRegister, response: Response):
+    expected = os.environ.get("ADMIN_SIGNUP_CODE", "")
+    if not expected or payload.admin_code.strip() != expected:
+        raise HTTPException(status_code=403, detail="الرمز السري غير صحيح")
+    email = payload.email.lower().strip()
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="هذا البريد مسجل مسبقاً")
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "name": payload.name.strip(),
+        "email": email,
+        "password_hash": hash_password(payload.password),
+        "role": "admin",
+        "avatar_color": "from-amber-400 to-orange-500",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.users.insert_one(user_doc)

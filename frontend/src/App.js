@@ -11,6 +11,7 @@ import RegisterPage from "./pages/RegisterPage";
 import NewArticlePage from "./pages/NewArticlePage";
 import EditArticlePage from "./pages/EditArticlePage";
 import ArticleDetailPage from "./pages/ArticleDetailPage";
+import AdminSignupPage from "./pages/AdminSignupPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -73,3 +74,4 @@ function App() {
 }
 
 export default App;
+ default App;
