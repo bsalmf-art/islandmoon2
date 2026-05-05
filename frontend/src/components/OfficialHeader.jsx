@@ -7,9 +7,9 @@ export default function OfficialHeader() {
         {/* MoE logo - left in RTL = visual right */}
         <div className="flex items-center gap-3 shrink-0">
           <img
-            src="/moe-logo.svg"
-            alt="وزارة التعليم"
-            className="w-14 h-14 md:w-16 md:h-16 bg-white/95 rounded-xl p-1 shadow-md"
+            src="/moe-logo.jpg"
+            alt="وزارة التعليم – رؤية ٢٠٣٠"
+            className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-xl p-1 shadow-md object-contain"
             data-testid="moe-logo"
           />
         </div>
@@ -30,7 +30,7 @@ export default function OfficialHeader() {
           <img
             src="/school-logo.jpg"
             alt="الثانوية ٥٦"
-            className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-xl p-1 shadow-md object-contain"
+            className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-xl p-1 shadow-md object-contain"
             data-testid="school-logo"
           />
         </div>
