@@ -2,9 +2,96 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, Sparkles, BookOpen, PenLine, Shield, Pencil, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check } from "lucide-react";
 
 const CATEGORIES = ["الكل", "تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
+
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.origin : "";
+  const shareText = `🌸 مدونة "بخبراتنا نسمو" – معلمات الثانوية ٥٦\nانضمي إلينا لتبادل الخبرات التعليمية والتربوية:\n${url}`;
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = shareText;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const nativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "بخبراتنا نسمو", text: shareText, url });
+        return;
+      } catch {}
+    }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={nativeShare}
+        data-testid="hero-share-btn"
+        className="btn-pill text-white"
+        style={{ background: "linear-gradient(135deg, #10B981 0%, #06B6D4 100%)", boxShadow: "0 8px 24px -8px rgba(16,185,129,0.6)" }}
+      >
+        <Share2 size={18} />
+        <span>شاركي الرابط</span>
+      </button>
+      {open && (
+        <div
+          className="absolute z-30 top-full mt-2 right-0 w-64 card-glass p-3 space-y-2"
+          data-testid="share-menu"
+        >
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="share-whatsapp"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
+          >
+            <span className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-black">W</span>
+            <span className="font-bold text-[--c-deep]">واتساب</span>
+          </a>
+          <a
+            href={tgUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="share-telegram"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-cyan-50 transition"
+          >
+            <span className="w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center text-sm font-black">T</span>
+            <span className="font-bold text-[--c-deep]">تيليجرام</span>
+          </a>
+          <button
+            onClick={copy}
+            data-testid="share-copy"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-pink-50 transition text-right"
+          >
+            <span className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center">
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </span>
+            <span className="font-bold text-[--c-deep]">{copied ? "تم النسخ ✓" : "نسخ الرابط"}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function timeAgo(iso) {
   const d = new Date(iso);
@@ -231,6 +318,7 @@ export default function HomePage() {
               <a href="#articles" className="btn-pill btn-ghost">
                 تصفحي المقالات
               </a>
+              <ShareButton />
             </div>
           </div>
         </div>
