@@ -24,7 +24,7 @@ export default function Navbar() {
           </div>
           <div className="leading-tight">
             <div className="font-display text-xl text-[--c-deep]">بخبراتنا نسمو</div>
-            <div className="text-[11px] text-[--c-deep]/60 font-medium">معلمات ثانوية ٥٦</div>
+            <div className="text-[11px] text-[--c-deep]/60 font-medium">مدونة المعلمات</div>
           </div>
         </Link>
 
@@ -55,6 +55,14 @@ export default function Navbar() {
                 <span className="text-sm font-bold text-[--c-deep] max-w-[120px] truncate">
                   {user.name}
                 </span>
+                {user.role === "admin" && (
+                  <span
+                    data-testid="nav-admin-badge"
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-l from-amber-400 to-orange-500 text-white shadow"
+                  >
+                    إدارة
+                  </span>
+                )}
               </div>
 
               <button

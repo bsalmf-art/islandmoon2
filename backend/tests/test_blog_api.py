@@ -212,6 +212,163 @@ class TestArticles:
         assert r.status_code == 404
 
 
+class TestArticleUpdate:
+    """Tests for PUT /api/articles/{id} - owner/admin can edit."""
+
+    def test_update_requires_auth(self, user_session):
+        # Owner creates
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST update auth",
+            "content": "TEST محتوى التعديل بدون تسجيل",
+        })
+        aid = r.json()["id"]
+        try:
+            r2 = requests.put(f"{API}/articles/{aid}", json={"title": "TEST hacked title"})
+            assert r2.status_code == 401
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_owner_partial_title_only(self, user_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST owner edit",
+            "content": "TEST المحتوى الأصلي قبل التعديل",
+            "category": "رحلتي",
+            "cover_emoji": "✨",
+        })
+        aid = r.json()["id"]
+        original_content = r.json()["content"]
+        try:
+            new_title = "TEST عنوان معدل"
+            r2 = user_session.put(f"{API}/articles/{aid}", json={"title": new_title})
+            assert r2.status_code == 200, r2.text
+            body = r2.json()
+            assert body["id"] == aid
+            assert body["title"] == new_title
+            # Other fields untouched
+            assert body["content"] == original_content
+            assert body["category"] == "رحلتي"
+            assert body["cover_emoji"] == "✨"
+            assert "_id" not in body
+
+            # Verify persistence via GET
+            g = requests.get(f"{API}/articles/{aid}").json()
+            assert g["title"] == new_title
+            assert g["content"] == original_content
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_owner_partial_content_only(self, user_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST content only",
+            "content": "TEST محتوى أولي قبل التعديل",
+        })
+        aid = r.json()["id"]
+        original_title = r.json()["title"]
+        try:
+            new_content = "TEST محتوى جديد بعد التعديل بشكل كامل"
+            r2 = user_session.put(f"{API}/articles/{aid}", json={"content": new_content})
+            assert r2.status_code == 200, r2.text
+            body = r2.json()
+            assert body["content"] == new_content
+            assert body["title"] == original_title
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_owner_full_payload(self, user_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST full edit",
+            "content": "TEST المحتوى الأصلي قبل التعديل الكامل",
+            "category": "عام",
+            "cover_emoji": "🌸",
+        })
+        aid = r.json()["id"]
+        try:
+            payload = {
+                "title": "TEST عنوان جديد كامل",
+                "content": "TEST محتوى جديد كامل بعد التعديل",
+                "category": "تطوير ذاتي",
+                "cover_emoji": "🌟",
+            }
+            r2 = user_session.put(f"{API}/articles/{aid}", json=payload)
+            assert r2.status_code == 200, r2.text
+            body = r2.json()
+            assert body["title"] == payload["title"]
+            assert body["content"] == payload["content"]
+            assert body["category"] == payload["category"]
+            assert body["cover_emoji"] == payload["cover_emoji"]
+            # Counters preserved structure
+            assert body["likes_count"] == 0
+            assert body["comments_count"] == 0
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_non_owner_forbidden(self, user_session, user2_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST non-owner edit",
+            "content": "TEST محتوى لمنع التعديل من الغير",
+        })
+        aid = r.json()["id"]
+        try:
+            r2 = user2_session.put(f"{API}/articles/{aid}", json={"title": "TEST hijacked"})
+            assert r2.status_code == 403
+            detail = r2.json().get("detail", "")
+            assert "صلاحية" in detail or "تعديل" in detail, detail
+            # Confirm article unchanged
+            g = requests.get(f"{API}/articles/{aid}").json()
+            assert g["title"] == "TEST non-owner edit"
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_admin_can_edit_any_article(self, user_session, admin_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST admin can edit",
+            "content": "TEST محتوى للتأكد من قدرة الإدارة على التعديل",
+            "category": "عام",
+        })
+        aid = r.json()["id"]
+        try:
+            new_title = "TEST عدلتها الإدارة"
+            r2 = admin_session.put(
+                f"{API}/articles/{aid}",
+                json={"title": new_title, "category": "رحلتي"},
+            )
+            assert r2.status_code == 200, r2.text
+            body = r2.json()
+            assert body["title"] == new_title
+            assert body["category"] == "رحلتي"
+            # author_id should remain the original (sarah), not admin
+            assert body["author_id"] != admin_session.cookies.get_dict().get("admin_id", "ignored")
+            # Verify persistence
+            g = requests.get(f"{API}/articles/{aid}").json()
+            assert g["title"] == new_title
+            assert g["category"] == "رحلتي"
+        finally:
+            # owner deletes (or admin)
+            d = admin_session.delete(f"{API}/articles/{aid}")
+            if d.status_code != 200:
+                user_session.delete(f"{API}/articles/{aid}")
+
+    def test_update_nonexistent_article_404(self, user_session):
+        r = user_session.put(
+            f"{API}/articles/{uuid.uuid4()}",
+            json={"title": "TEST nope"},
+        )
+        assert r.status_code == 404
+
+    def test_update_validation_short_title(self, user_session):
+        r = user_session.post(f"{API}/articles", json={
+            "title": "TEST validation",
+            "content": "TEST محتوى للتحقق من التحقق",
+        })
+        aid = r.json()["id"]
+        try:
+            # title shorter than min_length=3
+            r2 = user_session.put(f"{API}/articles/{aid}", json={"title": "ab"})
+            assert r2.status_code == 422
+        finally:
+            user_session.delete(f"{API}/articles/{aid}")
+
+
 class TestLikes:
     def test_like_toggle(self, user_session):
         # create article

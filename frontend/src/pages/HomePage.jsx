@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, Sparkles, BookOpen, PenLine } from "lucide-react";
+import { Heart, MessageCircle, Sparkles, BookOpen, PenLine, Shield, Pencil, Trash2 } from "lucide-react";
 
 const CATEGORIES = ["الكل", "تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
 
@@ -16,16 +16,24 @@ function timeAgo(iso) {
   return d.toLocaleDateString("ar-SA");
 }
 
-function ArticleCard({ article, onLike, idx }) {
+function ArticleCard({ article, onLike, onDelete, idx, isAdmin }) {
   const { user } = useAuth();
   const [popping, setPopping] = useState(false);
 
   const handleLike = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!user) return;
     setPopping(true);
     setTimeout(() => setPopping(false), 400);
     await onLike(article.id);
+  };
+
+  const handleQuickDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`حذف المقال: "${article.title}" ؟`)) return;
+    await onDelete(article.id);
   };
 
   const initials = article.author_name?.charAt(0) || "م";
@@ -35,9 +43,30 @@ function ArticleCard({ article, onLike, idx }) {
     <Link
       to={`/article/${article.id}`}
       data-testid={`article-card-${article.id}`}
-      className="card-glass p-6 block slide-up"
+      className="card-glass p-6 block slide-up relative"
       style={{ animationDelay: `${idx * 70}ms` }}
     >
+      {isAdmin && (
+        <div className="absolute top-3 left-3 flex gap-1 z-10">
+          <Link
+            to={`/edit/${article.id}`}
+            onClick={(e) => e.stopPropagation()}
+            data-testid={`card-edit-${article.id}`}
+            className="w-8 h-8 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-700 flex items-center justify-center"
+            title="تعديل"
+          >
+            <Pencil size={14} />
+          </Link>
+          <button
+            onClick={handleQuickDelete}
+            data-testid={`card-delete-${article.id}`}
+            className="w-8 h-8 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-700 flex items-center justify-center"
+            title="حذف"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
       <div className="flex items-start gap-4 mb-4">
         <div className="text-4xl drop-shadow">{article.cover_emoji}</div>
         <div className="flex-1 min-w-0">
@@ -122,10 +151,40 @@ export default function HomePage() {
     } catch {}
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/articles/${id}`);
+      setArticles((arr) => arr.filter((a) => a.id !== id));
+    } catch (err) {
+      alert("تعذّر الحذف");
+    }
+  };
+
+  const isAdmin = user && user !== false && user.role === "admin";
   const filtered = filter === "الكل" ? articles : articles.filter((a) => a.category === filter);
 
   return (
     <div className="max-w-6xl mx-auto px-5 pt-8 pb-20">
+      {isAdmin && (
+        <div className="card-glass p-5 mb-6 slide-up bg-gradient-to-l from-amber-50 to-pink-50 border-amber-200" data-testid="admin-banner">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shrink-0">
+              <Shield className="text-white" size={22} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display text-xl text-[--c-deep] mb-1">
+                لوحة الإدارة المختصرة
+              </h3>
+              <p className="text-sm text-[--c-deep]/70 leading-7">
+                بصلاحياتك الكاملة كمشرفة، يمكنك <strong>تعديل أو حذف</strong> أي مقال أو تعليق من خلال الأزرار الظاهرة في كل بطاقة.
+                لأي ملاحظة أو مشكلة في الموقع، تواصلي معنا عبر البريد:
+                <a href="mailto:support@namu.sa" className="font-bold text-pink-600 hover:underline mr-1">support@namu.sa</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <section className="relative mb-12 slide-up" data-testid="home-hero">
         <div className="card-glass px-8 py-12 md:px-14 md:py-16 overflow-hidden relative">
@@ -135,7 +194,7 @@ export default function HomePage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 border border-pink-200 mb-5">
               <Sparkles className="text-pink-500" size={16} />
-              <span className="text-xs font-bold text-[--c-deep]">مدونة معلمات ثانوية ٥٦</span>
+              <span className="text-xs font-bold text-[--c-deep]">الثانوية ٥٦ • إدارة تعليم الرياض</span>
             </div>
 
             <h1 className="font-display text-5xl md:text-7xl leading-tight text-[--c-deep] mb-4">
@@ -225,7 +284,7 @@ export default function HomePage() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((a, idx) => (
-            <ArticleCard key={a.id} article={a} onLike={handleLike} idx={idx} />
+            <ArticleCard key={a.id} article={a} onLike={handleLike} onDelete={handleDelete} idx={idx} isAdmin={isAdmin} />
           ))}
         </div>
       )}

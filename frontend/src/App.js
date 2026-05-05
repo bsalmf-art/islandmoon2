@@ -3,11 +3,13 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
+import OfficialHeader from "./components/OfficialHeader";
 import PageBackground from "./components/PageBackground";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import NewArticlePage from "./pages/NewArticlePage";
+import EditArticlePage from "./pages/EditArticlePage";
 import ArticleDetailPage from "./pages/ArticleDetailPage";
 
 function ProtectedRoute({ children }) {
@@ -26,6 +28,7 @@ function ProtectedRoute({ children }) {
 function AppShell() {
   return (
     <PageBackground>
+      <OfficialHeader />
       <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -36,6 +39,14 @@ function AppShell() {
           element={
             <ProtectedRoute>
               <NewArticlePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit/:id"
+          element={
+            <ProtectedRoute>
+              <EditArticlePage />
             </ProtectedRoute>
           }
         />

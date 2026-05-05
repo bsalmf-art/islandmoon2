@@ -1,0 +1,53 @@
+{
+  "summary": "Tested new PUT /api/articles/{id} endpoint plus full regression of auth, articles CRUD, likes, comments, and CORS. All 25 executed tests passed; 3 skipped were guard-skips that depended on at least one seeded article (collection was intentionally cleared, as documented).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_blog_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "tests_added_for_put_endpoint": [
+    "test_update_requires_auth (401 without cookie)",
+    "test_update_owner_partial_title_only (partial update preserves other fields, GET-verified)",
+    "test_update_owner_partial_content_only (partial update preserves title, GET-verified)",
+    "test_update_owner_full_payload (full edit including category & cover_emoji)",
+    "test_update_non_owner_forbidden (403, content unchanged in DB)",
+    "test_update_admin_can_edit_any_article (admin edits another teacher's article, GET-verified)",
+    "test_update_nonexistent_article_404",
+    "test_update_validation_short_title (Pydantic min_length -> 422)"
+  ],
+  "regression_results": {
+    "auth": "register / login / me / logout / wrong-password / duplicate-email all PASS; httpOnly cookie set & cleared correctly",
+    "articles_crud": "list / create / get / delete / non-owner-403 / admin-can-delete / 404 all PASS",
+    "likes": "toggle PASS; like-requires-auth SKIPPED (no seeded articles to target with anonymous client)",
+    "comments": "add+delete PASS; delete-other-user-403 PASS; list/add-requires-auth SKIPPED (no seeded articles)",
+    "cors": "GET returns access-control-allow-credentials=true PASS"
+  },
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PUT /api/articles/{id} correctly enforces owner-or-admin authorization, supports partial updates, sets updated_at timestamp, strips _id, and re-uses enrich_article for response shape.",
+    "ArticleUpdate model uses Optional fields with the same min_length/max_length constraints as ArticleCreate -> consistent validation.",
+    "Minor: response_model=ArticleOut is great. Consider also returning 404 with consistent Arabic message (already done).",
+    "Minor (pre-existing, not blocking): server.py uses deprecated FastAPI on_event('startup'/'shutdown') hooks; migrate to lifespan context for FastAPI >=0.95.",
+    "Minor: list_comments has no auth dependency, so liked_by_me-style personalization is N/A; consistent with current spec."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_blog_api.py (added TestArticleUpdate class with 8 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (25/25 executed; 3 skipped by design)",
+    "frontend": "not tested (backend-only request)"
+  },
+  "test_credentials": "admin@namu.sa / Admin@2026 (admin, working); sarah@namu.sa, mona@namu.sa, reem@namu.sa / Password123 (teachers, working)",
+  "seed_data_creation": "None. Tests self-create TEST_-prefixed articles/comments and clean up in finally blocks.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_blog_api.py now contains 28 tests (25 active + 3 conditional skips). The 3 skipped tests (test_like_requires_auth, test_list_comments_no_auth, test_add_comment_requires_auth) only run if the /api/articles list is non-empty when called anonymously; once the app has any persisted article they will execute. PUT endpoint fully covered. Admin seed is idempotent and updates password if changed."
+}

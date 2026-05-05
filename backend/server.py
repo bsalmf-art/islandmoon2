@@ -88,6 +88,13 @@ class ArticleCreate(BaseModel):
     cover_emoji: str = Field(default="🌸", max_length=8)
 
 
+class ArticleUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=3, max_length=200)
+    content: Optional[str] = Field(default=None, min_length=10)
+    category: Optional[str] = Field(default=None, max_length=60)
+    cover_emoji: Optional[str] = Field(default=None, max_length=8)
+
+
 class ArticleOut(BaseModel):
     id: str
     title: str
@@ -287,6 +294,31 @@ async def delete_article(article_id: str, current=Depends(get_current_user)):
     await db.comments.delete_many({"article_id": article_id})
     await db.likes.delete_many({"article_id": article_id})
     return {"ok": True}
+
+
+@api_router.put("/articles/{article_id}", response_model=ArticleOut)
+async def update_article(
+    article_id: str, payload: ArticleUpdate, current=Depends(get_current_user)
+):
+    doc = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="المقال غير موجود")
+    if doc["author_id"] != current["id"] and current.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="لا تملكين صلاحية التعديل")
+    updates = {}
+    if payload.title is not None:
+        updates["title"] = payload.title.strip()
+    if payload.content is not None:
+        updates["content"] = payload.content.strip()
+    if payload.category is not None:
+        updates["category"] = payload.category.strip() or "عام"
+    if payload.cover_emoji is not None:
+        updates["cover_emoji"] = payload.cover_emoji or "🌸"
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.articles.update_one({"id": article_id}, {"$set": updates})
+    new_doc = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    return await enrich_article(new_doc, current)
 
 
 # ========== LIKES ==========

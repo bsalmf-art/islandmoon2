@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, ArrowRight, Trash2, Send } from "lucide-react";
+import { Heart, MessageCircle, ArrowRight, Trash2, Send, Sparkles } from "lucide-react";
 
 function timeAgo(iso) {
   const d = new Date(iso);
@@ -141,14 +141,24 @@ export default function ArticleDetailPage() {
             </div>
           </div>
           {(isAuthor || isAdmin) && (
-            <button
-              onClick={deleteArticle}
-              data-testid="article-delete-btn"
-              className="btn-pill btn-ghost !text-rose-600 !border-rose-200"
-            >
-              <Trash2 size={16} />
-              <span>حذف المقال</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate(`/edit/${article.id}`)}
+                data-testid="article-edit-btn"
+                className="btn-pill btn-ghost !text-amber-700 !border-amber-200"
+              >
+                <Sparkles size={16} />
+                <span>تعديل</span>
+              </button>
+              <button
+                onClick={deleteArticle}
+                data-testid="article-delete-btn"
+                className="btn-pill btn-ghost !text-rose-600 !border-rose-200"
+              >
+                <Trash2 size={16} />
+                <span>حذف</span>
+              </button>
+            </div>
           )}
         </div>
 
