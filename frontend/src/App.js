@@ -52,6 +52,7 @@ function AppShell() {
           }
         />
         <Route path="/article/:id" element={<ArticleDetailPage />} />
+        <Route path="/admin-signup" element={<AdminSignupPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="text-center py-8 text-sm text-[--c-deep]/50">
@@ -74,4 +75,3 @@ function App() {
 }
 
 export default App;
- default App;
