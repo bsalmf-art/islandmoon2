@@ -24,6 +24,7 @@
 ## What's Implemented (2026-05-05)
 ### Backend
 - `POST/GET/DELETE /api/articles` (auth required for create/delete; owner/admin only)
+- `PUT /api/articles/{id}` – edit (owner or admin) with partial update support
 - `POST /api/articles/{id}/like` (toggle, returns liked + likes_count)
 - `GET/POST /api/articles/{id}/comments`, `DELETE /api/comments/{id}`
 - `POST /api/auth/register | login | logout`, `GET /api/auth/me`
@@ -33,16 +34,19 @@
 - All responses exclude Mongo `_id`; UUID-based ids
 
 ### Frontend
+- **Official Saudi header**: المملكة العربية السعودية / وزارة التعليم / إدارة تعليم الرياض / الثانوية ٥٦ on a deep emerald banner with both school logo (right) and MoE logo (left)
 - Hero landing with title "بخبراتنا نسمو" + scribble underline
 - Articles grid with emoji covers, categories filter chips
 - Article detail page with comments thread + like button
+- **Admin features**: edit/delete buttons on every article card + dashboard banner with support email
+- "إدارة" badge on navbar for admin users
 - Login & Register pages with glass-morphism cards
-- New Article composer (emoji picker + categories + textarea)
+- New Article composer + Edit Article page
 - AuthContext with axios + withCredentials
 - Floating petals + grain overlay + Tajawal/Lalezar fonts
 
 ### Testing
-- Backend: 20/20 pytest tests passed (auth, articles, likes, comments, CORS)
+- Backend: 25/25 pytest tests passed (auth, articles CRUD + edit, likes, comments, CORS, admin permissions)
 
 ## Seeded Test Data
 - 3 teachers + 3 sample articles (educational, behavioral, tech)
