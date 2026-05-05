@@ -24,6 +24,8 @@ function StatCard({ icon: Icon, label, value, color, testid }) {
 
 function UserRow({ user, onUpdate, onDelete, currentUserId }) {
   const [busy, setBusy] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(user.name);
   const isMe = user.id === currentUserId;
   const initials = user.name?.charAt(0) || "م";
 
@@ -34,6 +36,17 @@ function UserRow({ user, onUpdate, onDelete, currentUserId }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  const saveName = async () => {
+    const trimmed = nameDraft.trim();
+    if (trimmed.length < 2) return;
+    if (trimmed === user.name) {
+      setEditingName(false);
+      return;
+    }
+    await update({ name: trimmed });
+    setEditingName(false);
   };
 
   const handleDelete = async () => {
@@ -57,7 +70,44 @@ function UserRow({ user, onUpdate, onDelete, currentUserId }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-[--c-deep] truncate">{user.name}</span>
+            {editingName ? (
+              <div className="flex items-center gap-1">
+                <input
+                  autoFocus
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveName()}
+                  data-testid={`admin-edit-name-input-${user.id}`}
+                  className="input-field !py-1 !px-2 text-sm font-bold !w-56"
+                />
+                <button
+                  onClick={saveName}
+                  disabled={busy}
+                  data-testid={`admin-save-name-${user.id}`}
+                  className="px-2 py-1 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold"
+                >
+                  حفظ
+                </button>
+                <button
+                  onClick={() => { setNameDraft(user.name); setEditingName(false); }}
+                  className="px-2 py-1 rounded-full bg-white/80 text-[--c-deep] text-xs"
+                >
+                  إلغاء
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="font-bold text-[--c-deep] truncate">{user.name}</span>
+                <button
+                  onClick={() => setEditingName(true)}
+                  data-testid={`admin-rename-btn-${user.id}`}
+                  className="text-amber-600 hover:text-amber-700 p-0.5"
+                  title="تعديل الاسم"
+                >
+                  <Pencil size={13} />
+                </button>
+              </>
+            )}
             {user.role === "admin" && (
               <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-l from-amber-400 to-orange-500 text-white">
                 إدارة

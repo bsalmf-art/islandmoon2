@@ -105,6 +105,7 @@ class AdminUserOut(BaseModel):
 class AdminUserUpdate(BaseModel):
     role: Optional[str] = Field(default=None, pattern="^(teacher|admin)$")
     is_blocked: Optional[bool] = None
+    name: Optional[str] = Field(default=None, min_length=2, max_length=80)
 
 
 class AdminStats(BaseModel):
@@ -511,6 +512,12 @@ async def admin_update_user(
         updates["role"] = payload.role
     if payload.is_blocked is not None:
         updates["is_blocked"] = payload.is_blocked
+    if payload.name is not None:
+        new_name = payload.name.strip()
+        updates["name"] = new_name
+        # Propagate name change to existing articles & comments authored by this user
+        await db.articles.update_many({"author_id": user_id}, {"$set": {"author_name": new_name}})
+        await db.comments.update_many({"author_id": user_id}, {"$set": {"author_name": new_name}})
     if updates:
         await db.users.update_one({"id": user_id}, {"$set": updates})
     new_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
