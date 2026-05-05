@@ -167,20 +167,27 @@ export default function HomePage() {
     <div className="max-w-6xl mx-auto px-5 pt-8 pb-20">
       {isAdmin && (
         <div className="card-glass p-5 mb-6 slide-up bg-gradient-to-l from-amber-50 to-pink-50 border-amber-200" data-testid="admin-banner">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 flex-wrap">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shrink-0">
               <Shield className="text-white" size={22} />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-[240px]">
               <h3 className="font-display text-xl text-[--c-deep] mb-1">
-                لوحة الإدارة المختصرة
+                مرحباً بكِ في وضع الإدارة 👑
               </h3>
               <p className="text-sm text-[--c-deep]/70 leading-7">
-                بصلاحياتك الكاملة كمشرفة، يمكنك <strong>تعديل أو حذف</strong> أي مقال أو تعليق من خلال الأزرار الظاهرة في كل بطاقة.
-                لأي ملاحظة أو مشكلة في الموقع، تواصلي معنا عبر البريد:
-                <a href="mailto:support@namu.sa" className="font-bold text-pink-600 hover:underline mr-1">support@namu.sa</a>
+                يمكنك تعديل/حذف أي مقال من البطاقات هنا، أو فتح <strong>لوحة التحكم</strong> الكاملة لإدارة المعلمات والترقيات والحظر.
               </p>
             </div>
+            <Link
+              to="/admin"
+              data-testid="admin-banner-open-panel"
+              className="btn-pill !px-5 !py-3 text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #F59E0B 0%, #DB2777 100%)" }}
+            >
+              <Shield size={18} />
+              <span>افتحي اللوحة</span>
+            </Link>
           </div>
         </div>
       )}

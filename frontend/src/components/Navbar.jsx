@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Plus, Sparkles, BookOpenText, User as UserIcon } from "lucide-react";
+import { LogOut, Plus, Sparkles, BookOpenText, User as UserIcon, Crown } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -31,6 +31,18 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {user && user !== false ? (
             <>
+              {user.role === "admin" && (
+                <Link
+                  to="/admin"
+                  data-testid="nav-admin-panel-btn"
+                  className="btn-pill !px-4 text-white hidden sm:inline-flex"
+                  style={{ background: "linear-gradient(135deg, #F59E0B 0%, #DB2777 100%)" }}
+                  title="لوحة التحكم"
+                >
+                  <Crown size={18} />
+                  <span>اللوحة</span>
+                </Link>
+              )}
               <Link
                 to="/new"
                 data-testid="nav-new-article-btn"

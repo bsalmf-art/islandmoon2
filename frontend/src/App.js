@@ -12,6 +12,7 @@ import NewArticlePage from "./pages/NewArticlePage";
 import EditArticlePage from "./pages/EditArticlePage";
 import ArticleDetailPage from "./pages/ArticleDetailPage";
 import AdminSignupPage from "./pages/AdminSignupPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -53,6 +54,14 @@ function AppShell() {
         />
         <Route path="/article/:id" element={<ArticleDetailPage />} />
         <Route path="/admin-signup" element={<AdminSignupPage />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminPanelPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="text-center py-8 text-sm text-[--c-deep]/50">

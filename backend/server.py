@@ -86,6 +86,34 @@ class UserOut(BaseModel):
     role: str = "teacher"
     avatar_color: str = "from-pink-400 to-fuchsia-500"
     created_at: str
+    is_blocked: bool = False
+
+
+class AdminUserOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: str
+    role: str
+    avatar_color: str
+    created_at: str
+    is_blocked: bool = False
+    articles_count: int = 0
+    comments_count: int = 0
+
+
+class AdminUserUpdate(BaseModel):
+    role: Optional[str] = Field(default=None, pattern="^(teacher|admin)$")
+    is_blocked: Optional[bool] = None
+
+
+class AdminStats(BaseModel):
+    teachers_count: int
+    admins_count: int
+    articles_count: int
+    comments_count: int
+    likes_count: int
+    blocked_count: int
 
 
 class ArticleCreate(BaseModel):
@@ -147,6 +175,8 @@ async def get_current_user(request: Request) -> dict:
         user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password_hash": 0})
         if not user:
             raise HTTPException(status_code=401, detail="المستخدمة غير موجودة")
+        if user.get("is_blocked"):
+            raise HTTPException(status_code=403, detail="تم تعليق حسابك")
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="انتهت صلاحية الجلسة")
@@ -159,6 +189,12 @@ async def get_current_user_optional(request: Request) -> Optional[dict]:
         return await get_current_user(request)
     except HTTPException:
         return None
+
+
+async def require_admin(current=Depends(get_current_user)) -> dict:
+    if current.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="هذه الصفحة مخصصة للإدارة فقط")
+    return current
 
 
 # App
@@ -238,6 +274,8 @@ async def login(payload: UserLogin, response: Response):
     user = await db.users.find_one({"email": email}, {"_id": 0})
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="البريد أو كلمة المرور غير صحيحة")
+    if user.get("is_blocked"):
+        raise HTTPException(status_code=403, detail="تم تعليق حسابك. تواصلي مع الإدارة.")
     token = create_access_token(user["id"], email)
     set_auth_cookie(response, token)
     user.pop("password_hash", None)
@@ -421,6 +459,93 @@ async def delete_comment(comment_id: str, current=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="لا تملكين صلاحية الحذف")
     await db.comments.delete_one({"id": comment_id})
     return {"ok": True}
+
+
+# ========== ADMIN PANEL ==========
+@api_router.get("/admin/stats", response_model=AdminStats)
+async def admin_stats(current=Depends(require_admin)):
+    return AdminStats(
+        teachers_count=await db.users.count_documents({"role": "teacher"}),
+        admins_count=await db.users.count_documents({"role": "admin"}),
+        articles_count=await db.articles.count_documents({}),
+        comments_count=await db.comments.count_documents({}),
+        likes_count=await db.likes.count_documents({}),
+        blocked_count=await db.users.count_documents({"is_blocked": True}),
+    )
+
+
+@api_router.get("/admin/users", response_model=List[AdminUserOut])
+async def admin_list_users(current=Depends(require_admin)):
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(1000)
+    out = []
+    for u in users:
+        out.append(
+            AdminUserOut(
+                id=u["id"],
+                name=u["name"],
+                email=u["email"],
+                role=u.get("role", "teacher"),
+                avatar_color=u.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+                created_at=u["created_at"],
+                is_blocked=u.get("is_blocked", False),
+                articles_count=await db.articles.count_documents({"author_id": u["id"]}),
+                comments_count=await db.comments.count_documents({"author_id": u["id"]}),
+            )
+        )
+    return out
+
+
+@api_router.put("/admin/users/{user_id}", response_model=AdminUserOut)
+async def admin_update_user(
+    user_id: str, payload: AdminUserUpdate, current=Depends(require_admin)
+):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدمة غير موجودة")
+    if user_id == current["id"] and payload.role == "teacher":
+        raise HTTPException(status_code=400, detail="لا يمكنك تنزيل صلاحياتك بنفسك")
+    if user_id == current["id"] and payload.is_blocked is True:
+        raise HTTPException(status_code=400, detail="لا يمكنك حظر نفسك")
+    updates = {}
+    if payload.role is not None:
+        updates["role"] = payload.role
+    if payload.is_blocked is not None:
+        updates["is_blocked"] = payload.is_blocked
+    if updates:
+        await db.users.update_one({"id": user_id}, {"$set": updates})
+    new_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    return AdminUserOut(
+        id=new_user["id"],
+        name=new_user["name"],
+        email=new_user["email"],
+        role=new_user.get("role", "teacher"),
+        avatar_color=new_user.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        created_at=new_user["created_at"],
+        is_blocked=new_user.get("is_blocked", False),
+        articles_count=await db.articles.count_documents({"author_id": user_id}),
+        comments_count=await db.comments.count_documents({"author_id": user_id}),
+    )
+
+
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, current=Depends(require_admin)):
+    if user_id == current["id"]:
+        raise HTTPException(status_code=400, detail="لا يمكنك حذف نفسك")
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="المستخدمة غير موجودة")
+    # Cascade delete articles, comments, likes by this user
+    await db.articles.delete_many({"author_id": user_id})
+    await db.comments.delete_many({"author_id": user_id})
+    await db.likes.delete_many({"user_id": user_id})
+    await db.users.delete_one({"id": user_id})
+    return {"ok": True}
+
+
+@api_router.get("/admin/comments", response_model=List[CommentOut])
+async def admin_list_comments(current=Depends(require_admin)):
+    docs = await db.comments.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
+    return [CommentOut(**d) for d in docs]
 
 
 # Health
