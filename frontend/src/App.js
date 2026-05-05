@@ -1,0 +1,64 @@
+import React from "react";
+import "@/App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import Navbar from "./components/Navbar";
+import PageBackground from "./components/PageBackground";
+import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import NewArticlePage from "./pages/NewArticlePage";
+import ArticleDetailPage from "./pages/ArticleDetailPage";
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading || user === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-[--c-deep]/60 font-bold">جاري التحميل…</div>
+      </div>
+    );
+  }
+  if (!user || user === false) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function AppShell() {
+  return (
+    <PageBackground>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/new"
+          element={
+            <ProtectedRoute>
+              <NewArticlePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/article/:id" element={<ArticleDetailPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <footer className="text-center py-8 text-sm text-[--c-deep]/50">
+        صُنع بحب 💗 لمعلمات ثانوية ٥٦ • بخبراتنا نسمو
+      </footer>
+    </PageBackground>
+  );
+}
+
+function App() {
+  return (
+    <div className="App">
+      <AuthProvider>
+        <BrowserRouter>
+          <AppShell />
+        </BrowserRouter>
+      </AuthProvider>
+    </div>
+  );
+}
+
+export default App;

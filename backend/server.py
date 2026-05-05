@@ -1,0 +1,418 @@
+from dotenv import load_dotenv
+from pathlib import Path
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+import os
+import logging
+import uuid
+import bcrypt
+import jwt
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
+
+
+# MongoDB
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ['DB_NAME']]
+
+# JWT helpers
+JWT_ALGORITHM = "HS256"
+
+
+def get_jwt_secret() -> str:
+    return os.environ["JWT_SECRET"]
+
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+
+
+def create_access_token(user_id: str, email: str) -> str:
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "type": "access",
+    }
+    return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
+
+
+def set_auth_cookie(response: Response, token: str):
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7 * 24 * 60 * 60,
+        path="/",
+    )
+
+
+# Models
+class UserRegister(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=128)
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: str
+    role: str = "teacher"
+    avatar_color: str = "from-pink-400 to-fuchsia-500"
+    created_at: str
+
+
+class ArticleCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    content: str = Field(min_length=10)
+    category: str = Field(default="عام", max_length=60)
+    cover_emoji: str = Field(default="🌸", max_length=8)
+
+
+class ArticleOut(BaseModel):
+    id: str
+    title: str
+    content: str
+    category: str
+    cover_emoji: str
+    author_id: str
+    author_name: str
+    author_color: str
+    likes_count: int = 0
+    comments_count: int = 0
+    liked_by_me: bool = False
+    created_at: str
+
+
+class CommentCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=1000)
+
+
+class CommentOut(BaseModel):
+    id: str
+    article_id: str
+    content: str
+    author_id: str
+    author_name: str
+    author_color: str
+    created_at: str
+
+
+# Auth dependencies
+async def get_current_user(request: Request) -> dict:
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="غير مصرح بالدخول")
+    try:
+        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="نوع التوكن غير صالح")
+        user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="المستخدمة غير موجودة")
+        return user
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="انتهت صلاحية الجلسة")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="توكن غير صالح")
+
+
+async def get_current_user_optional(request: Request) -> Optional[dict]:
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+
+
+# App
+app = FastAPI(title="بخبراتنا نسمو")
+api_router = APIRouter(prefix="/api")
+
+AVATAR_COLORS = [
+    "from-pink-400 to-fuchsia-500",
+    "from-rose-400 to-pink-600",
+    "from-fuchsia-400 to-purple-600",
+    "from-amber-400 to-orange-500",
+    "from-teal-400 to-cyan-500",
+    "from-violet-400 to-indigo-500",
+    "from-emerald-400 to-teal-500",
+    "from-yellow-400 to-amber-500",
+]
+
+
+def pick_color() -> str:
+    import random
+    return random.choice(AVATAR_COLORS)
+
+
+# ========== AUTH ==========
+@api_router.post("/auth/register", response_model=UserOut)
+async def register(payload: UserRegister, response: Response):
+    email = payload.email.lower().strip()
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="هذا البريد مسجل مسبقاً")
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "name": payload.name.strip(),
+        "email": email,
+        "password_hash": hash_password(payload.password),
+        "role": "teacher",
+        "avatar_color": pick_color(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(user_doc)
+    token = create_access_token(user_doc["id"], email)
+    set_auth_cookie(response, token)
+    user_doc.pop("password_hash", None)
+    user_doc.pop("_id", None)
+    return UserOut(**user_doc)
+
+
+@api_router.post("/auth/login", response_model=UserOut)
+async def login(payload: UserLogin, response: Response):
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user or not verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="البريد أو كلمة المرور غير صحيحة")
+    token = create_access_token(user["id"], email)
+    set_auth_cookie(response, token)
+    user.pop("password_hash", None)
+    return UserOut(**user)
+
+
+@api_router.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token", path="/")
+    return {"ok": True}
+
+
+@api_router.get("/auth/me", response_model=UserOut)
+async def me(current=Depends(get_current_user)):
+    return UserOut(**current)
+
+
+# ========== ARTICLES ==========
+async def enrich_article(doc: dict, current_user: Optional[dict]) -> ArticleOut:
+    article_id = doc["id"]
+    likes_count = await db.likes.count_documents({"article_id": article_id})
+    comments_count = await db.comments.count_documents({"article_id": article_id})
+    liked_by_me = False
+    if current_user:
+        liked_by_me = (
+            await db.likes.find_one(
+                {"article_id": article_id, "user_id": current_user["id"]}
+            )
+            is not None
+        )
+    return ArticleOut(
+        id=doc["id"],
+        title=doc["title"],
+        content=doc["content"],
+        category=doc.get("category", "عام"),
+        cover_emoji=doc.get("cover_emoji", "🌸"),
+        author_id=doc["author_id"],
+        author_name=doc.get("author_name", "معلمة"),
+        author_color=doc.get("author_color", "from-pink-400 to-fuchsia-500"),
+        likes_count=likes_count,
+        comments_count=comments_count,
+        liked_by_me=liked_by_me,
+        created_at=doc["created_at"],
+    )
+
+
+@api_router.get("/articles", response_model=List[ArticleOut])
+async def list_articles(current=Depends(get_current_user_optional)):
+    docs = await db.articles.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return [await enrich_article(d, current) for d in docs]
+
+
+@api_router.post("/articles", response_model=ArticleOut)
+async def create_article(payload: ArticleCreate, current=Depends(get_current_user)):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "title": payload.title.strip(),
+        "content": payload.content.strip(),
+        "category": payload.category.strip() or "عام",
+        "cover_emoji": payload.cover_emoji or "🌸",
+        "author_id": current["id"],
+        "author_name": current["name"],
+        "author_color": current.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.articles.insert_one(doc)
+    doc.pop("_id", None)
+    return await enrich_article(doc, current)
+
+
+@api_router.get("/articles/{article_id}", response_model=ArticleOut)
+async def get_article(article_id: str, current=Depends(get_current_user_optional)):
+    doc = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="المقال غير موجود")
+    return await enrich_article(doc, current)
+
+
+@api_router.delete("/articles/{article_id}")
+async def delete_article(article_id: str, current=Depends(get_current_user)):
+    doc = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="المقال غير موجود")
+    if doc["author_id"] != current["id"] and current.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="لا تملكين صلاحية الحذف")
+    await db.articles.delete_one({"id": article_id})
+    await db.comments.delete_many({"article_id": article_id})
+    await db.likes.delete_many({"article_id": article_id})
+    return {"ok": True}
+
+
+# ========== LIKES ==========
+@api_router.post("/articles/{article_id}/like")
+async def toggle_like(article_id: str, current=Depends(get_current_user)):
+    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="المقال غير موجود")
+    existing = await db.likes.find_one(
+        {"article_id": article_id, "user_id": current["id"]}
+    )
+    if existing:
+        await db.likes.delete_one({"article_id": article_id, "user_id": current["id"]})
+        liked = False
+    else:
+        await db.likes.insert_one(
+            {
+                "id": str(uuid.uuid4()),
+                "article_id": article_id,
+                "user_id": current["id"],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        liked = True
+    count = await db.likes.count_documents({"article_id": article_id})
+    return {"liked": liked, "likes_count": count}
+
+
+# ========== COMMENTS ==========
+@api_router.get("/articles/{article_id}/comments", response_model=List[CommentOut])
+async def list_comments(article_id: str):
+    docs = (
+        await db.comments.find({"article_id": article_id}, {"_id": 0})
+        .sort("created_at", 1)
+        .to_list(500)
+    )
+    return [CommentOut(**d) for d in docs]
+
+
+@api_router.post("/articles/{article_id}/comments", response_model=CommentOut)
+async def add_comment(
+    article_id: str, payload: CommentCreate, current=Depends(get_current_user)
+):
+    article = await db.articles.find_one({"id": article_id}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="المقال غير موجود")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "article_id": article_id,
+        "content": payload.content.strip(),
+        "author_id": current["id"],
+        "author_name": current["name"],
+        "author_color": current.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.comments.insert_one(doc)
+    doc.pop("_id", None)
+    return CommentOut(**doc)
+
+
+@api_router.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: str, current=Depends(get_current_user)):
+    doc = await db.comments.find_one({"id": comment_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="التعليق غير موجود")
+    if doc["author_id"] != current["id"] and current.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="لا تملكين صلاحية الحذف")
+    await db.comments.delete_one({"id": comment_id})
+    return {"ok": True}
+
+
+# Health
+@api_router.get("/")
+async def root():
+    return {"app": "بخبراتنا نسمو", "ok": True}
+
+
+app.include_router(api_router)
+
+# CORS
+frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[frontend_url, "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@app.on_event("startup")
+async def on_startup():
+    await db.users.create_index("email", unique=True)
+    await db.users.create_index("id", unique=True)
+    await db.articles.create_index("id", unique=True)
+    await db.articles.create_index("created_at")
+    await db.comments.create_index("article_id")
+    await db.likes.create_index([("article_id", 1), ("user_id", 1)], unique=True)
+
+    # Seed admin
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@namu.sa")
+    admin_password = os.environ.get("ADMIN_PASSWORD", "Admin@2026")
+    existing = await db.users.find_one({"email": admin_email})
+    if existing is None:
+        await db.users.insert_one(
+            {
+                "id": str(uuid.uuid4()),
+                "name": "إدارة المدونة",
+                "email": admin_email,
+                "password_hash": hash_password(admin_password),
+                "role": "admin",
+                "avatar_color": "from-amber-400 to-orange-500",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        logger.info(f"Admin seeded: {admin_email}")
+    elif not verify_password(admin_password, existing["password_hash"]):
+        await db.users.update_one(
+            {"email": admin_email},
+            {"$set": {"password_hash": hash_password(admin_password)}},
+        )
+
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()

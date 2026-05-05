@@ -1,0 +1,234 @@
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
+import { Heart, MessageCircle, Sparkles, BookOpen, PenLine } from "lucide-react";
+
+const CATEGORIES = ["الكل", "تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
+
+function timeAgo(iso) {
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "الآن";
+  if (diff < 3600) return `قبل ${Math.floor(diff / 60)} دقيقة`;
+  if (diff < 86400) return `قبل ${Math.floor(diff / 3600)} ساعة`;
+  if (diff < 86400 * 30) return `قبل ${Math.floor(diff / 86400)} يوم`;
+  return d.toLocaleDateString("ar-SA");
+}
+
+function ArticleCard({ article, onLike, idx }) {
+  const { user } = useAuth();
+  const [popping, setPopping] = useState(false);
+
+  const handleLike = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    setPopping(true);
+    setTimeout(() => setPopping(false), 400);
+    await onLike(article.id);
+  };
+
+  const initials = article.author_name?.charAt(0) || "م";
+  const excerpt = article.content.length > 180 ? article.content.slice(0, 180) + "…" : article.content;
+
+  return (
+    <Link
+      to={`/article/${article.id}`}
+      data-testid={`article-card-${article.id}`}
+      className="card-glass p-6 block slide-up"
+      style={{ animationDelay: `${idx * 70}ms` }}
+    >
+      <div className="flex items-start gap-4 mb-4">
+        <div className="text-4xl drop-shadow">{article.cover_emoji}</div>
+        <div className="flex-1 min-w-0">
+          <span className="chip mb-2 inline-flex">{article.category}</span>
+          <h3 className="font-display text-2xl text-[--c-deep] leading-tight line-clamp-2">
+            {article.title}
+          </h3>
+        </div>
+      </div>
+
+      <p className="text-[--c-deep]/75 text-sm leading-7 mb-5 line-clamp-3">{excerpt}</p>
+
+      <div className="flex items-center justify-between pt-4 border-t border-pink-100">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-9 h-9 rounded-full bg-gradient-to-br ${article.author_color} flex items-center justify-center text-white font-bold text-sm shadow`}
+          >
+            {initials}
+          </div>
+          <div className="leading-tight">
+            <div className="text-xs font-bold text-[--c-deep]">{article.author_name}</div>
+            <div className="text-[10px] text-[--c-deep]/50">{timeAgo(article.created_at)}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLike}
+            data-testid={`article-like-btn-${article.id}`}
+            disabled={!user}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all ${
+              article.liked_by_me
+                ? "bg-pink-100 text-pink-600"
+                : "bg-white/70 text-[--c-deep]/60 hover:text-pink-500"
+            } ${!user ? "opacity-60 cursor-not-allowed" : ""}`}
+          >
+            <Heart
+              size={16}
+              fill={article.liked_by_me ? "currentColor" : "none"}
+              className={popping ? "heart-pop" : ""}
+            />
+            <span className="text-xs font-bold">{article.likes_count}</span>
+          </button>
+          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 text-[--c-deep]/60">
+            <MessageCircle size={16} />
+            <span className="text-xs font-bold">{article.comments_count}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+export default function HomePage() {
+  const { user } = useAuth();
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("الكل");
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get("/articles");
+      setArticles(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, [user]);
+
+  const handleLike = async (id) => {
+    try {
+      const { data } = await api.post(`/articles/${id}/like`);
+      setArticles((arr) =>
+        arr.map((a) =>
+          a.id === id ? { ...a, liked_by_me: data.liked, likes_count: data.likes_count } : a
+        )
+      );
+    } catch {}
+  };
+
+  const filtered = filter === "الكل" ? articles : articles.filter((a) => a.category === filter);
+
+  return (
+    <div className="max-w-6xl mx-auto px-5 pt-8 pb-20">
+      {/* Hero */}
+      <section className="relative mb-12 slide-up" data-testid="home-hero">
+        <div className="card-glass px-8 py-12 md:px-14 md:py-16 overflow-hidden relative">
+          <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full bg-gradient-to-br from-pink-300 to-fuchsia-400 opacity-50 blur-3xl" />
+          <div className="absolute -bottom-10 -right-10 w-56 h-56 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 opacity-50 blur-3xl" />
+
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 border border-pink-200 mb-5">
+              <Sparkles className="text-pink-500" size={16} />
+              <span className="text-xs font-bold text-[--c-deep]">مدونة معلمات ثانوية ٥٦</span>
+            </div>
+
+            <h1 className="font-display text-5xl md:text-7xl leading-tight text-[--c-deep] mb-4">
+              <span className="scribble-underline">بخبراتنا</span>{" "}
+              <span className="bg-gradient-to-l from-pink-500 via-fuchsia-500 to-violet-500 bg-clip-text text-transparent">
+                نسمو
+              </span>{" "}
+              ✨
+            </h1>
+
+            <p className="text-lg md:text-xl text-[--c-deep]/75 max-w-2xl leading-9 font-medium">
+              فضاء تربوي نابض شاركن فيه ما تعلمتنّ، احتفلن بإنجازاتكن، وتبادلن الأفكار التعليمية والتربوية بكل حب 💗
+            </p>
+
+            <div className="flex flex-wrap gap-3 mt-7">
+              {user && user !== false ? (
+                <Link to="/new" data-testid="hero-write-btn" className="btn-pill btn-primary">
+                  <PenLine size={18} />
+                  <span>اكتبي خبرتك الآن</span>
+                </Link>
+              ) : (
+                <Link to="/register" data-testid="hero-join-btn" className="btn-pill btn-primary">
+                  <BookOpen size={18} />
+                  <span>انضمي للمدونة</span>
+                </Link>
+              )}
+              <a href="#articles" className="btn-pill btn-ghost">
+                تصفحي المقالات
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Category filter */}
+      <section id="articles" className="mb-6 slide-up" style={{ animationDelay: "120ms" }}>
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-5">
+          <h2 className="font-display text-3xl text-[--c-deep]">آخر المقالات</h2>
+          <div className="text-sm text-[--c-deep]/60 font-medium">
+            {filtered.length} مقال
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              onClick={() => setFilter(c)}
+              data-testid={`filter-${c}`}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                filter === c
+                  ? "bg-gradient-to-l from-pink-500 to-violet-500 text-white shadow-md shadow-pink-300"
+                  : "bg-white/70 text-[--c-deep]/70 hover:bg-white"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Articles Grid */}
+      {loading ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="card-glass p-6 h-64 shimmer" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card-glass p-14 text-center" data-testid="empty-state">
+          <div className="text-6xl mb-4">🌸</div>
+          <h3 className="font-display text-2xl mb-2">لا توجد مقالات بعد</h3>
+          <p className="text-[--c-deep]/60 mb-6">
+            كوني أول معلمة تشاركنا خبرتها التعليمية الجميلة
+          </p>
+          {user && user !== false ? (
+            <Link to="/new" className="btn-pill btn-primary">
+              <PenLine size={18} />
+              <span>اكتبي مقالك الأول</span>
+            </Link>
+          ) : (
+            <Link to="/register" className="btn-pill btn-primary">
+              <BookOpen size={18} />
+              <span>انضمي وابدئي</span>
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((a, idx) => (
+            <ArticleCard key={a.id} article={a} onLike={handleLike} idx={idx} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
