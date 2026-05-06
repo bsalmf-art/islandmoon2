@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import OfficialHeader from "./components/OfficialHeader";
 import PageBackground from "./components/PageBackground";
+import InstallPrompt from "./components/InstallPrompt";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -67,6 +68,7 @@ function AppShell() {
       <footer className="text-center py-8 text-sm text-[--c-deep]/50">
         صُنع بحب 💗 لمعلمات ثانوية ٥٦ • بخبراتنا نسمو
       </footer>
+      <InstallPrompt />
     </PageBackground>
   );
 }

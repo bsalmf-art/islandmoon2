@@ -1,0 +1,34 @@
+{
+  "short_name": "بخبراتنا نسمو",
+  "name": "بخبراتنا نسمو – مدونة معلمات ثانوية ٥٦",
+  "description": "فضاء تربوي لتبادل الخبرات التعليمية بين معلمات الثانوية ٥٦ بإدارة تعليم الرياض",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFBF1",
+  "theme_color": "#FF4FA3",
+  "categories": ["education", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/school-logo.jpg",
+      "type": "image/jpeg",
+      "sizes": "200x200",
+      "purpose": "any"
+    }
+  ]
+}
