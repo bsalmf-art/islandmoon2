@@ -49,7 +49,7 @@ export default function NewArticlePage() {
             <PenHandIcon size={24} color="white" />
           </div>
           <div>
-            <h1 className="font-display text-3xl text-[--c-deep]">شاركي خبرتك</h1>
+            <h1 className="font-display text-xl text-[--c-deep]">شاركي خبرتك</h1>
             <p className="text-sm text-[--c-deep]/60">دعي بصمتك التربوية تلهم زميلاتك</p>
           </div>
         </div>

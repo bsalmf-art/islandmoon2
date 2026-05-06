@@ -36,7 +36,7 @@ export default function LoginPage() {
             <PenHandIcon size={30} color="white" />
           </div>
         </div>
-        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">أهلاً بعودتك</h1>
+        <h1 className="font-display text-2xl text-center mb-2 text-[--c-deep]">أهلاً بعودتك</h1>
         <p className="text-center text-[--c-deep]/60 mb-8">سجلي الدخول لمتابعة مشاركة خبراتك</p>
 
         <form onSubmit={submit} className="space-y-4" data-testid="login-form">

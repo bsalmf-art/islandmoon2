@@ -159,7 +159,7 @@ function ArticleCard({ article, onLike, onDelete, idx, isAdmin }) {
         <div className="text-4xl drop-shadow">{article.cover_emoji}</div>
         <div className="flex-1 min-w-0">
           <span className="chip mb-2 inline-flex">{article.category}</span>
-          <h3 className="font-display text-2xl text-[--c-deep] leading-tight line-clamp-2">
+          <h3 className="font-display text-base md:text-lg text-[--c-deep] leading-tight line-clamp-2">
             {article.title}
           </h3>
         </div>
@@ -260,7 +260,7 @@ export default function HomePage() {
               <Shield className="text-white" size={22} />
             </div>
             <div className="flex-1 min-w-[240px]">
-              <h3 className="font-display text-xl text-[--c-deep] mb-1">
+          <h3 className="font-display text-base text-[--c-deep] mb-1">
                 مرحباً بكِ في وضع الإدارة
               </h3>
               <p className="text-sm text-[--c-deep]/70 leading-7">
@@ -292,15 +292,15 @@ export default function HomePage() {
               <span className="text-xs font-bold text-[--c-deep]">الثانوية ٥٦ • إدارة تعليم الرياض</span>
             </div>
 
-            <h1 className="font-display text-5xl md:text-7xl leading-tight text-[--c-deep] mb-4 flex items-center gap-4 flex-wrap">
+            <h1 className="font-display text-3xl md:text-4xl leading-tight text-[--c-deep] mb-4 flex items-center gap-3 flex-wrap">
               <span className="scribble-underline">بخبراتنا</span>{" "}
               <span className="bg-gradient-to-l from-pink-500 via-fuchsia-500 to-violet-500 bg-clip-text text-transparent">
                 نسمو
               </span>
-              <PenHandIcon size={56} className="md:w-20 md:h-20" color="#DB2777" />
+              <PenHandIcon size={32} className="md:w-10 md:h-10" />
             </h1>
 
-            <p className="text-lg md:text-xl text-[--c-deep]/75 max-w-2xl leading-9 font-medium">
+            <p className="text-base md:text-lg text-[--c-deep]/75 max-w-2xl leading-8 font-medium">
               فضاء تربوي شاركن فيه ما تعلمتنّ، احتفلن بإنجازاتكن، وتبادلن الأفكار التعليمية والتربوية.
             </p>
 
@@ -328,7 +328,7 @@ export default function HomePage() {
       {/* Category filter */}
       <section id="articles" className="mb-6 slide-up" style={{ animationDelay: "120ms" }}>
         <div className="flex items-center justify-between flex-wrap gap-4 mb-5">
-          <h2 className="font-display text-3xl text-[--c-deep]">آخر المقالات</h2>
+          <h2 className="font-display text-xl md:text-2xl text-[--c-deep]">آخر المقالات</h2>
           <div className="text-sm text-[--c-deep]/60 font-medium">
             {filtered.length} مقال
           </div>
@@ -363,7 +363,7 @@ export default function HomePage() {
           <div className="flex justify-center mb-4">
             <PenHandIcon size={72} color="#DB2777" />
           </div>
-          <h3 className="font-display text-2xl mb-2">لا توجد مقالات بعد</h3>
+          <h3 className="font-display text-xl mb-2">لا توجد مقالات بعد</h3>
           <p className="text-[--c-deep]/60 mb-6">
             كوني أول معلمة تشاركنا خبرتها التعليمية
           </p>

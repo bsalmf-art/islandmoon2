@@ -117,12 +117,12 @@ export default function ArticleDetailPage() {
       </button>
 
       {/* Article */}
-      <article className="card-glass p-8 md:p-12 slide-up">
+      <article className="card-glass p-6 md:p-8 slide-up">
         <div className="flex items-start gap-4 mb-6">
-          <div className="text-6xl drop-shadow">{article.cover_emoji}</div>
+          <div className="text-4xl drop-shadow">{article.cover_emoji}</div>
           <div className="flex-1 min-w-0">
             <span className="chip mb-3 inline-flex">{article.category}</span>
-            <h1 className="font-display text-4xl md:text-5xl text-[--c-deep] leading-tight">
+            <h1 className="font-display text-xl md:text-2xl text-[--c-deep] leading-snug">
               {article.title}
             </h1>
           </div>
@@ -162,7 +162,7 @@ export default function ArticleDetailPage() {
           )}
         </div>
 
-        <div className="prose prose-lg max-w-none text-[--c-deep] leading-9 whitespace-pre-wrap text-lg" data-testid="article-content">
+        <div className="prose prose-lg max-w-none text-[--c-deep] leading-9 whitespace-pre-wrap text-base" data-testid="article-content">
           {article.content}
         </div>
 
@@ -188,7 +188,7 @@ export default function ArticleDetailPage() {
 
       {/* Comments */}
       <section className="mt-8" data-testid="comments-section">
-        <h2 className="font-display text-2xl mb-5 text-[--c-deep]">التعليقات 💬</h2>
+        <h2 className="font-display text-lg mb-5 text-[--c-deep]">التعليقات 💬</h2>
 
         {/* Comment form */}
         {user && user !== false ? (

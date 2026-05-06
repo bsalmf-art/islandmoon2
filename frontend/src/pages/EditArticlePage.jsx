@@ -74,7 +74,7 @@ export default function EditArticlePage() {
             <Sparkles className="text-white" size={20} />
           </div>
           <div>
-            <h1 className="font-display text-3xl text-[--c-deep]">تعديل المقال</h1>
+            <h1 className="font-display text-xl text-[--c-deep]">تعديل المقال</h1>
             <p className="text-sm text-[--c-deep]/60">حدّثي المحتوى ثم احفظي التغييرات</p>
           </div>
         </div>

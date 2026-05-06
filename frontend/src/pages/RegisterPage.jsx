@@ -34,7 +34,7 @@ export default function RegisterPage() {
             <PenHandIcon size={30} color="white" />
           </div>
         </div>
-        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">انضمي إلينا</h1>
+        <h1 className="font-display text-2xl text-center mb-2 text-[--c-deep]">انضمي إلينا</h1>
         <p className="text-center text-[--c-deep]/60 mb-8">
           أنشئي حسابك وابدئي بمشاركة خبراتك التعليمية
         </p>

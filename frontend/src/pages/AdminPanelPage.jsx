@@ -281,8 +281,8 @@ export default function AdminPanelPage() {
             <span>للرئيسية</span>
           </button>
           <div>
-            <h1 className="font-display text-3xl text-[--c-deep] flex items-center gap-2">
-              <Crown className="text-amber-500" size={28} />
+            <h1 className="font-display text-xl md:text-2xl text-[--c-deep] flex items-center gap-2">
+              <Crown className="text-amber-500" size={22} />
               لوحة التحكم
             </h1>
             <p className="text-sm text-[--c-deep]/60">إدارة شاملة للموقع والمحتوى</p>

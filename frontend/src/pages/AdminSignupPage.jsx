@@ -39,7 +39,7 @@ export default function AdminSignupPage() {
             <Crown className="text-white" size={28} strokeWidth={2.5} />
           </div>
         </div>
-        <h1 className="font-display text-3xl text-center mb-1 text-[--c-deep]">
+        <h1 className="font-display text-xl text-center mb-1 text-[--c-deep]">
           تسجيل حساب إدارة
         </h1>
         <p className="text-center text-[--c-deep]/60 mb-2 text-sm">
