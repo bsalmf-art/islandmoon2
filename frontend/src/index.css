@@ -185,6 +185,14 @@ html, body {
     border-radius: 999px;
 }
 
+/* Hide Emergent badge for ministry submission (preview mode) */
+#emergent-badge {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 /* Custom cursor on links */
 a, button { cursor: pointer; }
 
