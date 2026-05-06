@@ -66,7 +66,7 @@ function AppShell() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="text-center py-8 text-sm text-[--c-deep]/50">
-        صُنع بحب 💗 لمعلمات ثانوية ٥٦ • بخبراتنا نسمو
+        مدونة معلمات الثانوية ٥٦ • بخبراتنا نسمو
       </footer>
       <InstallPrompt />
     </PageBackground>

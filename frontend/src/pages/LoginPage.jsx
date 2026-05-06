@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { formatApiError } from "../lib/api";
-import { Mail, Lock, LogIn, Sparkles } from "lucide-react";
+import { Mail, Lock, LogIn } from "lucide-react";
+import PenHandIcon from "../components/PenHandIcon";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -32,10 +33,10 @@ export default function LoginPage() {
       <div className="card-glass p-8 md:p-10 slide-up">
         <div className="flex items-center justify-center mb-6">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-pink-500 via-fuchsia-500 to-violet-500 flex items-center justify-center shadow-lg shadow-pink-500/40">
-            <Sparkles className="text-white" size={28} strokeWidth={2.5} />
+            <PenHandIcon size={30} color="white" />
           </div>
         </div>
-        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">أهلاً بعودتك 🌸</h1>
+        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">أهلاً بعودتك</h1>
         <p className="text-center text-[--c-deep]/60 mb-8">سجلي الدخول لمتابعة مشاركة خبراتك</p>
 
         <form onSubmit={submit} className="space-y-4" data-testid="login-form">

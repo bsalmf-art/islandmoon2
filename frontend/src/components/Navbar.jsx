@@ -1,7 +1,8 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Plus, Sparkles, BookOpenText, User as UserIcon, Crown } from "lucide-react";
+import { LogOut, Plus, BookOpenText, User as UserIcon, Crown } from "lucide-react";
+import PenHandIcon from "./PenHandIcon";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -20,7 +21,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
         <Link to="/" data-testid="nav-home-link" className="flex items-center gap-2 group">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 via-fuchsia-500 to-violet-500 flex items-center justify-center shadow-lg shadow-pink-500/30 group-hover:rotate-6 transition-transform">
-            <Sparkles className="text-white" size={22} strokeWidth={2.5} />
+            <PenHandIcon size={22} color="white" />
           </div>
           <div className="leading-tight">
             <div className="font-display text-xl text-[--c-deep]">بخبراتنا نسمو</div>

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, Sparkles, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check } from "lucide-react";
+import { Heart, MessageCircle, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check } from "lucide-react";
+import PenHandIcon from "../components/PenHandIcon";
 
 const CATEGORIES = ["الكل", "تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
 
@@ -260,7 +261,7 @@ export default function HomePage() {
             </div>
             <div className="flex-1 min-w-[240px]">
               <h3 className="font-display text-xl text-[--c-deep] mb-1">
-                مرحباً بكِ في وضع الإدارة 👑
+                مرحباً بكِ في وضع الإدارة
               </h3>
               <p className="text-sm text-[--c-deep]/70 leading-7">
                 يمكنك تعديل/حذف أي مقال من البطاقات هنا، أو فتح <strong>لوحة التحكم</strong> الكاملة لإدارة المعلمات والترقيات والحظر.
@@ -287,20 +288,20 @@ export default function HomePage() {
 
           <div className="relative">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/80 border border-pink-200 mb-5">
-              <Sparkles className="text-pink-500" size={16} />
+              <PenHandIcon size={18} color="#DB2777" />
               <span className="text-xs font-bold text-[--c-deep]">الثانوية ٥٦ • إدارة تعليم الرياض</span>
             </div>
 
-            <h1 className="font-display text-5xl md:text-7xl leading-tight text-[--c-deep] mb-4">
+            <h1 className="font-display text-5xl md:text-7xl leading-tight text-[--c-deep] mb-4 flex items-center gap-4 flex-wrap">
               <span className="scribble-underline">بخبراتنا</span>{" "}
               <span className="bg-gradient-to-l from-pink-500 via-fuchsia-500 to-violet-500 bg-clip-text text-transparent">
                 نسمو
-              </span>{" "}
-              ✨
+              </span>
+              <PenHandIcon size={56} className="md:w-20 md:h-20" color="#DB2777" />
             </h1>
 
             <p className="text-lg md:text-xl text-[--c-deep]/75 max-w-2xl leading-9 font-medium">
-              فضاء تربوي نابض شاركن فيه ما تعلمتنّ، احتفلن بإنجازاتكن، وتبادلن الأفكار التعليمية والتربوية بكل حب 💗
+              فضاء تربوي شاركن فيه ما تعلمتنّ، احتفلن بإنجازاتكن، وتبادلن الأفكار التعليمية والتربوية.
             </p>
 
             <div className="flex flex-wrap gap-3 mt-7">
@@ -359,10 +360,12 @@ export default function HomePage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card-glass p-14 text-center" data-testid="empty-state">
-          <div className="text-6xl mb-4">🌸</div>
+          <div className="flex justify-center mb-4">
+            <PenHandIcon size={72} color="#DB2777" />
+          </div>
           <h3 className="font-display text-2xl mb-2">لا توجد مقالات بعد</h3>
           <p className="text-[--c-deep]/60 mb-6">
-            كوني أول معلمة تشاركنا خبرتها التعليمية الجميلة
+            كوني أول معلمة تشاركنا خبرتها التعليمية
           </p>
           {user && user !== false ? (
             <Link to="/new" className="btn-pill btn-primary">

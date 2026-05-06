@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
-import { Sparkles, Send, ArrowRight } from "lucide-react";
+import { Send, ArrowRight } from "lucide-react";
+import PenHandIcon from "../components/PenHandIcon";
 
 const CATEGORIES = ["تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
 const EMOJIS = ["🌸", "✨", "📚", "🎨", "💡", "🌟", "🌷", "💗", "🌼", "🎓", "🪄", "🍀"];
@@ -45,7 +46,7 @@ export default function NewArticlePage() {
       <div className="card-glass p-8 md:p-10 slide-up">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-violet-500 flex items-center justify-center">
-            <Sparkles className="text-white" size={20} />
+            <PenHandIcon size={24} color="white" />
           </div>
           <div>
             <h1 className="font-display text-3xl text-[--c-deep]">شاركي خبرتك</h1>

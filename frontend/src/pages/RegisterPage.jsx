@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { formatApiError } from "../lib/api";
-import { Mail, Lock, User, Sparkles, BookOpen } from "lucide-react";
+import { Mail, Lock, User, BookOpen } from "lucide-react";
+import PenHandIcon from "../components/PenHandIcon";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -30,10 +31,10 @@ export default function RegisterPage() {
       <div className="card-glass p-8 md:p-10 slide-up">
         <div className="flex items-center justify-center mb-6">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-400 via-pink-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-pink-500/40">
-            <Sparkles className="text-white" size={28} strokeWidth={2.5} />
+            <PenHandIcon size={30} color="white" />
           </div>
         </div>
-        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">انضمي إلينا 💫</h1>
+        <h1 className="font-display text-4xl text-center mb-2 text-[--c-deep]">انضمي إلينا</h1>
         <p className="text-center text-[--c-deep]/60 mb-8">
           أنشئي حسابك وابدئي بمشاركة خبراتك التعليمية
         </p>
