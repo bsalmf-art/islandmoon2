@@ -326,7 +326,50 @@ async def enrich_article(doc: dict, current_user: Optional[dict]) -> ArticleOut:
 @api_router.get("/articles", response_model=List[ArticleOut])
 async def list_articles(current=Depends(get_current_user_optional)):
     docs = await db.articles.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return [await enrich_article(d, current) for d in docs]
+    if not docs:
+        return []
+    article_ids = [d["id"] for d in docs]
+
+    # Bulk aggregate likes/comments counts in 2 queries
+    likes_map = {}
+    async for row in db.likes.aggregate([
+        {"$match": {"article_id": {"$in": article_ids}}},
+        {"$group": {"_id": "$article_id", "count": {"$sum": 1}}},
+    ]):
+        likes_map[row["_id"]] = row["count"]
+
+    comments_map = {}
+    async for row in db.comments.aggregate([
+        {"$match": {"article_id": {"$in": article_ids}}},
+        {"$group": {"_id": "$article_id", "count": {"$sum": 1}}},
+    ]):
+        comments_map[row["_id"]] = row["count"]
+
+    liked_set = set()
+    if current:
+        async for row in db.likes.find(
+            {"article_id": {"$in": article_ids}, "user_id": current["id"]},
+            {"_id": 0, "article_id": 1},
+        ):
+            liked_set.add(row["article_id"])
+
+    return [
+        ArticleOut(
+            id=d["id"],
+            title=d["title"],
+            content=d["content"],
+            category=d.get("category", "عام"),
+            cover_emoji=d.get("cover_emoji", "🌸"),
+            author_id=d["author_id"],
+            author_name=d.get("author_name", "معلمة"),
+            author_color=d.get("author_color", "from-pink-400 to-fuchsia-500"),
+            likes_count=likes_map.get(d["id"], 0),
+            comments_count=comments_map.get(d["id"], 0),
+            liked_by_me=d["id"] in liked_set,
+            created_at=d["created_at"],
+        )
+        for d in docs
+    ]
 
 
 @api_router.post("/articles", response_model=ArticleOut)
@@ -478,22 +521,33 @@ async def admin_stats(current=Depends(require_admin)):
 @api_router.get("/admin/users", response_model=List[AdminUserOut])
 async def admin_list_users(current=Depends(require_admin)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(1000)
-    out = []
-    for u in users:
-        out.append(
-            AdminUserOut(
-                id=u["id"],
-                name=u["name"],
-                email=u["email"],
-                role=u.get("role", "teacher"),
-                avatar_color=u.get("avatar_color", "from-pink-400 to-fuchsia-500"),
-                created_at=u["created_at"],
-                is_blocked=u.get("is_blocked", False),
-                articles_count=await db.articles.count_documents({"author_id": u["id"]}),
-                comments_count=await db.comments.count_documents({"author_id": u["id"]}),
-            )
+    if not users:
+        return []
+    # Bulk aggregate counts in 2 queries
+    articles_counts = {}
+    async for row in db.articles.aggregate([
+        {"$group": {"_id": "$author_id", "count": {"$sum": 1}}},
+    ]):
+        articles_counts[row["_id"]] = row["count"]
+    comments_counts = {}
+    async for row in db.comments.aggregate([
+        {"$group": {"_id": "$author_id", "count": {"$sum": 1}}},
+    ]):
+        comments_counts[row["_id"]] = row["count"]
+    return [
+        AdminUserOut(
+            id=u["id"],
+            name=u["name"],
+            email=u["email"],
+            role=u.get("role", "teacher"),
+            avatar_color=u.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+            created_at=u["created_at"],
+            is_blocked=u.get("is_blocked", False),
+            articles_count=articles_counts.get(u["id"], 0),
+            comments_count=comments_counts.get(u["id"], 0),
         )
-    return out
+        for u in users
+    ]
 
 
 @api_router.put("/admin/users/{user_id}", response_model=AdminUserOut)
@@ -564,11 +618,23 @@ async def root():
 app.include_router(api_router)
 
 # CORS
+cors_env = os.environ.get("CORS_ORIGINS", "*")
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+if cors_env.strip() == "*":
+    cors_origins = ["*"]
+    allow_credentials = False  # browsers reject "*" with credentials
+else:
+    cors_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
+    if frontend_url and frontend_url not in cors_origins:
+        cors_origins.append(frontend_url)
+    if "http://localhost:3000" not in cors_origins:
+        cors_origins.append("http://localhost:3000")
+    allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
