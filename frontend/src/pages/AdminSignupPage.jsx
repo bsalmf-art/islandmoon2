@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { formatApiError } from "../lib/api";
+import api, { formatApiError, setAuthToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Mail, Lock, User, Shield, Key, Crown } from "lucide-react";
 
@@ -21,7 +21,8 @@ export default function AdminSignupPage() {
     setError("");
     setLoading(true);
     try {
-      await api.post("/auth/admin-register", form);
+      const { data } = await api.post("/auth/admin-register", form);
+      if (data?.access_token) setAuthToken(data.access_token);
       await refresh();
       navigate("/");
     } catch (err) {

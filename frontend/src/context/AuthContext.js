@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "../lib/api";
+import api, { setAuthToken } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -22,22 +22,27 @@ export function AuthProvider({ children }) {
     fetchMe();
   }, []);
 
-  const login = async (email, password) => {
-    const { data } = await api.post("/auth/login", { email, password });
+  const handleAuthResponse = (data) => {
+    if (data?.access_token) setAuthToken(data.access_token);
     setUser(data);
     return data;
   };
 
+  const login = async (email, password) => {
+    const { data } = await api.post("/auth/login", { email, password });
+    return handleAuthResponse(data);
+  };
+
   const register = async (name, email, password) => {
     const { data } = await api.post("/auth/register", { name, email, password });
-    setUser(data);
-    return data;
+    return handleAuthResponse(data);
   };
 
   const logout = async () => {
     try {
       await api.post("/auth/logout");
     } catch {}
+    setAuthToken(null);
     setUser(false);
   };
 

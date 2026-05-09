@@ -87,6 +87,7 @@ class UserOut(BaseModel):
     avatar_color: str = "from-pink-400 to-fuchsia-500"
     created_at: str
     is_blocked: bool = False
+    access_token: Optional[str] = None
 
 
 class AdminUserOut(BaseModel):
@@ -251,6 +252,7 @@ async def register(payload: UserRegister, response: Response):
     set_auth_cookie(response, token)
     user_doc.pop("password_hash", None)
     user_doc.pop("_id", None)
+    user_doc["access_token"] = token
     return UserOut(**user_doc)
 
 
@@ -277,6 +279,7 @@ async def admin_register(payload: AdminRegister, response: Response):
     set_auth_cookie(response, token)
     user_doc.pop("password_hash", None)
     user_doc.pop("_id", None)
+    user_doc["access_token"] = token
     return UserOut(**user_doc)
 
 
@@ -291,6 +294,7 @@ async def login(payload: UserLogin, response: Response):
     token = create_access_token(user["id"], email)
     set_auth_cookie(response, token)
     user.pop("password_hash", None)
+    user["access_token"] = token
     return UserOut(**user)
 
 
