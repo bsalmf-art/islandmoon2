@@ -117,11 +117,18 @@ class AdminStats(BaseModel):
     blocked_count: int
 
 
+class ArticleLink(BaseModel):
+    title: str = Field(min_length=1, max_length=100)
+    url: str = Field(min_length=4, max_length=500)
+
+
 class ArticleCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     content: str = Field(min_length=10)
     category: str = Field(default="عام", max_length=60)
     cover_emoji: str = Field(default="🌸", max_length=8)
+    images: List[str] = Field(default_factory=list)
+    links: List[ArticleLink] = Field(default_factory=list)
 
 
 class ArticleUpdate(BaseModel):
@@ -129,6 +136,8 @@ class ArticleUpdate(BaseModel):
     content: Optional[str] = Field(default=None, min_length=10)
     category: Optional[str] = Field(default=None, max_length=60)
     cover_emoji: Optional[str] = Field(default=None, max_length=8)
+    images: Optional[List[str]] = None
+    links: Optional[List[ArticleLink]] = None
 
 
 class ArticleOut(BaseModel):
@@ -140,6 +149,8 @@ class ArticleOut(BaseModel):
     author_id: str
     author_name: str
     author_color: str
+    images: List[str] = Field(default_factory=list)
+    links: List[ArticleLink] = Field(default_factory=list)
     likes_count: int = 0
     comments_count: int = 0
     liked_by_me: bool = False
@@ -316,6 +327,8 @@ async def enrich_article(doc: dict, current_user: Optional[dict]) -> ArticleOut:
         author_id=doc["author_id"],
         author_name=doc.get("author_name", "معلمة"),
         author_color=doc.get("author_color", "from-pink-400 to-fuchsia-500"),
+        images=doc.get("images", []),
+        links=doc.get("links", []),
         likes_count=likes_count,
         comments_count=comments_count,
         liked_by_me=liked_by_me,
@@ -363,6 +376,8 @@ async def list_articles(current=Depends(get_current_user_optional)):
             author_id=d["author_id"],
             author_name=d.get("author_name", "معلمة"),
             author_color=d.get("author_color", "from-pink-400 to-fuchsia-500"),
+            images=d.get("images", []),
+            links=d.get("links", []),
             likes_count=likes_map.get(d["id"], 0),
             comments_count=comments_map.get(d["id"], 0),
             liked_by_me=d["id"] in liked_set,
@@ -383,6 +398,8 @@ async def create_article(payload: ArticleCreate, current=Depends(get_current_use
         "author_id": current["id"],
         "author_name": current["name"],
         "author_color": current.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        "images": payload.images or [],
+        "links": [link.model_dump() for link in (payload.links or [])],
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.articles.insert_one(doc)
@@ -429,6 +446,10 @@ async def update_article(
         updates["category"] = payload.category.strip() or "عام"
     if payload.cover_emoji is not None:
         updates["cover_emoji"] = payload.cover_emoji or "🌸"
+    if payload.images is not None:
+        updates["images"] = payload.images
+    if payload.links is not None:
+        updates["links"] = [link.model_dump() for link in payload.links]
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.articles.update_one({"id": article_id}, {"$set": updates})

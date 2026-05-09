@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Sparkles, Save, ArrowRight } from "lucide-react";
+import { Save, ArrowRight } from "lucide-react";
+import PenHandIcon from "../components/PenHandIcon";
+import MediaPicker from "../components/MediaPicker";
 
 const CATEGORIES = ["تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
 const EMOJIS = ["🌸", "✨", "📚", "🎨", "💡", "🌟", "🌷", "💗", "🌼", "🎓", "🪄", "🍀"];
@@ -30,6 +32,8 @@ export default function EditArticlePage() {
           content: data.content,
           category: data.category,
           cover_emoji: data.cover_emoji,
+          images: data.images || [],
+          links: data.links || [],
         });
       } catch (err) {
         setError(formatApiError(err));
@@ -71,7 +75,7 @@ export default function EditArticlePage() {
       <div className="card-glass p-8 md:p-10 slide-up">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center">
-            <Sparkles className="text-white" size={20} />
+            <PenHandIcon size={24} color="white" />
           </div>
           <div>
             <h1 className="font-display text-xl text-[--c-deep]">تعديل المقال</h1>
@@ -148,6 +152,14 @@ export default function EditArticlePage() {
               data-testid="edit-content-input"
             />
           </div>
+
+          {/* Media (Images + Links) */}
+          <MediaPicker
+            images={form.images}
+            setImages={(v) => setForm((f) => ({ ...f, images: typeof v === "function" ? v(f.images) : v }))}
+            links={form.links}
+            setLinks={(v) => setForm((f) => ({ ...f, links: typeof v === "function" ? v(f.links) : v }))}
+          />
 
           {error && (
             <div className="text-sm text-rose-700 bg-rose-100 border border-rose-200 rounded-xl px-4 py-3" data-testid="edit-error">

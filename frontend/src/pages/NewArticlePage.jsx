@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
 import { Send, ArrowRight } from "lucide-react";
 import PenHandIcon from "../components/PenHandIcon";
+import MediaPicker from "../components/MediaPicker";
 
 const CATEGORIES = ["تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
 const EMOJIS = ["🌸", "✨", "📚", "🎨", "💡", "🌟", "🌷", "💗", "🌼", "🎓", "🪄", "🍀"];
@@ -14,6 +15,8 @@ export default function NewArticlePage() {
     content: "",
     category: "تعليمية",
     cover_emoji: "🌸",
+    images: [],
+    links: [],
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -129,6 +132,14 @@ export default function NewArticlePage() {
               data-testid="article-content-input"
             />
           </div>
+
+          {/* Media (Images + Links) */}
+          <MediaPicker
+            images={form.images}
+            setImages={(v) => setForm((f) => ({ ...f, images: typeof v === "function" ? v(f.images) : v }))}
+            links={form.links}
+            setLinks={(v) => setForm((f) => ({ ...f, links: typeof v === "function" ? v(f.links) : v }))}
+          />
 
           {error && (
             <div

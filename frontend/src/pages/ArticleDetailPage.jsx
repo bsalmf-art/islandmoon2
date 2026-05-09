@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, ArrowRight, Trash2, Send, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, ArrowRight, Trash2, Send, Sparkles, ExternalLink, Link as LinkIcon } from "lucide-react";
 
 function timeAgo(iso) {
   const d = new Date(iso);
@@ -165,6 +165,54 @@ export default function ArticleDetailPage() {
         <div className="prose prose-lg max-w-none text-[--c-deep] leading-9 whitespace-pre-wrap text-base" data-testid="article-content">
           {article.content}
         </div>
+
+        {/* Images Gallery */}
+        {article.images && article.images.length > 0 && (
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="article-images">
+            {article.images.map((src, i) => (
+              <a
+                key={i}
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-2xl overflow-hidden border-2 border-pink-200 hover:scale-[1.02] transition"
+                data-testid={`article-image-${i}`}
+              >
+                <img src={src} alt={`صورة ${i + 1}`} className="w-full h-auto object-cover" />
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* Links */}
+        {article.links && article.links.length > 0 && (
+          <div className="mt-6" data-testid="article-links">
+            <h3 className="font-display text-base text-[--c-deep] mb-3 flex items-center gap-2">
+              <LinkIcon size={18} className="text-violet-600" />
+              <span>روابط ذات صلة</span>
+            </h3>
+            <div className="space-y-2">
+              {article.links.map((l, i) => (
+                <a
+                  key={i}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`article-link-${i}`}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 border border-violet-200 hover:bg-violet-100 transition group"
+                >
+                  <div className="w-9 h-9 rounded-full bg-violet-500 text-white flex items-center justify-center shrink-0 group-hover:bg-violet-600 transition">
+                    <ExternalLink size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[--c-deep]">{l.title}</div>
+                    <div className="text-xs text-violet-700/80 truncate font-mono" dir="ltr">{l.url}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 mt-8 pt-6 border-t border-pink-100">
           <button

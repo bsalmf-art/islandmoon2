@@ -155,6 +155,18 @@ function ArticleCard({ article, onLike, onDelete, idx, isAdmin }) {
           </button>
         </div>
       )}
+
+      {/* Image preview */}
+      {article.images && article.images.length > 0 && (
+        <div className="-m-6 mb-4 rounded-t-2xl overflow-hidden h-40 relative">
+          <img src={article.images[0]} alt={article.title} className="w-full h-full object-cover" />
+          {article.images.length > 1 && (
+            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-[11px] font-bold">
+              +{article.images.length - 1} صور
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex items-start gap-4 mb-4">
         <div className="text-4xl drop-shadow">{article.cover_emoji}</div>
         <div className="flex-1 min-w-0">
