@@ -66,8 +66,20 @@ function AppShell() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <footer className="text-center py-8 text-sm text-[--c-deep]/50">
-        مدونة معلمات الثانوية ٥٦ • بخبراتنا نسمو
+      <footer className="mt-12 bg-[--c-deep] text-white/80">
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-white mb-2">بخبراتنا نسمو</div>
+            <p className="text-sm text-white/60 max-w-2xl mx-auto leading-relaxed">
+              مدونة معلمات الثانوية ٥٦ — فضاء تربوي نتبادل فيه الخبرات التعليمية والتربوية، ونحتفي بإنجازاتنا، ونلهم بعضنا البعض.
+            </p>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/50">
+            <div>© 2026 مدونة بخبراتنا نسمو — جميع الحقوق محفوظة.</div>
+            <div className="text-amber-200/80">ابتكار وإعداد: أ. بُثينة الفاضل</div>
+            <div>تُصدر بحبٍّ، وتُقرأ بشغف.</div>
+          </div>
+        </div>
       </footer>
       <InstallPrompt />
       <KeepAlive />
