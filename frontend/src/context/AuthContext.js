@@ -3,10 +3,13 @@ import api, { setAuthToken } from "../lib/api";
 
 const AuthContext = createContext(null);
 
-// Offline admin profile — shown when backend is unreachable
-const OFFLINE_ADMIN = {
+const OFFLINE_FLAG = "namu_offline_admin";
+const LOCAL_ADMIN_KEY = "namu_local_admin";
+
+// Default offline admin (fallback)
+const DEFAULT_OFFLINE_ADMIN = {
   id: "offline-admin",
-  name: "بُثينة الفاضل",
+  name: "إدارة المدونة",
   email: "admin@namu.sa",
   role: "admin",
   avatar_color: "from-pink-400 to-fuchsia-500",
@@ -14,17 +17,43 @@ const OFFLINE_ADMIN = {
   is_blocked: false,
   offline: true,
 };
-const OFFLINE_FLAG = "namu_offline_admin";
-const OFFLINE_PASSWORD = "Admin@2026";
+const DEFAULT_OFFLINE_PASSWORD = "Admin@2026";
+
+function readLocalAdmin() {
+  try {
+    const raw = localStorage.getItem(LOCAL_ADMIN_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function offlineAdminProfile() {
+  const local = readLocalAdmin();
+  if (local) {
+    const { password, ...rest } = local;
+    return rest;
+  }
+  return DEFAULT_OFFLINE_ADMIN;
+}
+
+function matchOfflineCredentials(email, password) {
+  const local = readLocalAdmin();
+  if (local && email === local.email && password === local.password) return local;
+  if (email === DEFAULT_OFFLINE_ADMIN.email && password === DEFAULT_OFFLINE_PASSWORD) {
+    return DEFAULT_OFFLINE_ADMIN;
+  }
+  return null;
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // null = checking, false = guest, object = logged
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMe = async () => {
-    // Offline session takes priority if present
     if (localStorage.getItem(OFFLINE_FLAG) === "1") {
-      setUser(OFFLINE_ADMIN);
+      setUser(offlineAdminProfile());
       setLoading(false);
       return;
     }
@@ -53,12 +82,15 @@ export function AuthProvider({ children }) {
       const { data } = await api.post("/auth/login", { email, password }, { timeout: 8000 });
       return handleAuthResponse(data);
     } catch (err) {
-      // Backend offline → allow built-in admin to log in locally
       const isNetwork = !err?.response;
-      if (isNetwork && email === OFFLINE_ADMIN.email && password === OFFLINE_PASSWORD) {
-        localStorage.setItem(OFFLINE_FLAG, "1");
-        setUser(OFFLINE_ADMIN);
-        return OFFLINE_ADMIN;
+      if (isNetwork) {
+        const match = matchOfflineCredentials(email, password);
+        if (match) {
+          localStorage.setItem(OFFLINE_FLAG, "1");
+          const { password: _p, ...profile } = match;
+          setUser(profile);
+          return profile;
+        }
       }
       throw err;
     }

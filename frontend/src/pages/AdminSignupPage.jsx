@@ -4,6 +4,10 @@ import api, { formatApiError, setAuthToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Mail, Lock, User, Shield, Key, Crown } from "lucide-react";
 
+const ADMIN_CODE = "NAMU-56-TMJVTKQZK3Y";
+const LOCAL_ADMIN_KEY = "namu_local_admin";
+const OFFLINE_FLAG = "namu_offline_admin";
+
 export default function AdminSignupPage() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
@@ -16,16 +20,50 @@ export default function AdminSignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const saveLocalAdmin = () => {
+    const localAdmin = {
+      id: "local-admin-" + Date.now(),
+      name: form.name,
+      email: form.email,
+      role: "admin",
+      avatar_color: "from-pink-400 to-fuchsia-500",
+      created_at: new Date().toISOString(),
+      is_blocked: false,
+      offline: true,
+    };
+    localStorage.setItem(
+      LOCAL_ADMIN_KEY,
+      JSON.stringify({ ...localAdmin, password: form.password })
+    );
+    localStorage.setItem(OFFLINE_FLAG, "1");
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    if (form.admin_code.trim() !== ADMIN_CODE) {
+      setError("الرمز السري للإدارة غير صحيح");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data } = await api.post("/auth/admin-register", form);
+      const { data } = await api.post("/auth/admin-register", form, { timeout: 8000 });
       if (data?.access_token) setAuthToken(data.access_token);
+      saveLocalAdmin(); // also save locally as backup
       await refresh();
       navigate("/");
     } catch (err) {
+      const isNetwork = !err?.response;
+      if (isNetwork) {
+        // Backend unreachable — create local admin so the user can manage offline
+        saveLocalAdmin();
+        await refresh();
+        navigate("/");
+        return;
+      }
       setError(formatApiError(err));
     } finally {
       setLoading(false);
