@@ -29,18 +29,10 @@ export default function ArticleDetailPage() {
 
   const load = async () => {
     setLoading(true);
-    // If this is a showcase sample, render it directly
-    const sample = SAMPLE_ARTICLES.find((s) => s.id === id);
-    if (sample) {
-      setArticle({ ...sample, liked_by_me: false });
-      setComments([]);
-      setLoading(false);
-      return;
-    }
     try {
       const [a, c] = await Promise.all([
-        api.get(`/articles/${id}`, { timeout: 8000 }),
-        api.get(`/articles/${id}/comments`, { timeout: 8000 }),
+        api.get(`/articles/${id}`, { timeout: 6000 }),
+        api.get(`/articles/${id}/comments`, { timeout: 6000 }),
       ]);
       setArticle(a.data);
       setComments(c.data);

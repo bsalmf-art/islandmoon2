@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
-import { SAMPLE_ARTICLES } from "../lib/sampleArticles";
 import { useAuth } from "../context/AuthContext";
 import { Heart, MessageCircle, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check } from "lucide-react";
 import PenHandIcon from "../components/PenHandIcon";
@@ -230,16 +229,10 @@ export default function HomePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/articles", { timeout: 8000 });
-      if (Array.isArray(data) && data.length > 0) {
-        setArticles(data);
-      } else {
-        // Backend reachable but no articles yet — show showcase samples
-        setArticles(SAMPLE_ARTICLES);
-      }
+      const { data } = await api.get("/articles", { timeout: 6000 });
+      setArticles(Array.isArray(data) ? data : []);
     } catch {
-      // Backend unreachable — gracefully fall back to showcase samples
-      setArticles(SAMPLE_ARTICLES);
+      setArticles([]);
     } finally {
       setLoading(false);
     }
