@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MessageCircle, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check } from "lucide-react";
+import { Heart, MessageCircle, BookOpen, PenLine, Shield, Pencil, Trash2, Share2, Copy, Check, Send, Twitter, Link2 } from "lucide-react";
 import PenHandIcon from "../components/PenHandIcon";
 
 const CATEGORIES = ["الكل", "تعليمية", "تربوية", "تقنية", "إدارية", "تحفيزية", "عام"];
@@ -124,6 +124,29 @@ function ArticleCard({ article, onLike, onDelete, idx, isAdmin }) {
     await onDelete(article.id);
   };
 
+  const articleUrl = `${window.location.origin}/article/${article.id}`;
+  const shareText = `${article.title}\n\nمن مدونة "بخبراتنا نسمو" — معلمات الثانوية ٥٦`;
+
+  const handleWhatsApp = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText + "\n" + articleUrl)}`, "_blank");
+  };
+
+  const handleTwitter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(articleUrl)}`, "_blank");
+  };
+
+  const handleCopy = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(articleUrl);
+    } catch {}
+  };
+
   const initials = article.author_name?.charAt(0) || "م";
   const excerpt = article.content.length > 180 ? article.content.slice(0, 180) + "…" : article.content;
 
@@ -192,37 +215,76 @@ function ArticleCard({ article, onLike, onDelete, idx, isAdmin }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleLike}
-            data-testid={`article-like-btn-${article.id}`}
-            disabled={!user}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all ${
-              article.liked_by_me
-                ? "bg-pink-100 text-pink-600"
-                : "bg-white/70 text-[--c-deep]/60 hover:text-pink-500"
-            } ${!user ? "opacity-60 cursor-not-allowed" : ""}`}
+            onClick={handleWhatsApp}
+            data-testid={`share-wa-${article.id}`}
+            className="w-9 h-9 rounded-full bg-green-50 hover:bg-green-100 text-green-600 flex items-center justify-center transition"
+            title="مشاركة عبر واتساب"
           >
-            <Heart
-              size={16}
-              fill={article.liked_by_me ? "currentColor" : "none"}
-              className={popping ? "heart-pop" : ""}
-            />
-            <span className="text-xs font-bold">{article.likes_count}</span>
+            <Send size={15} />
           </button>
-          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 text-[--c-deep]/60">
-            <MessageCircle size={16} />
-            <span className="text-xs font-bold">{article.comments_count}</span>
-          </div>
+          <button
+            onClick={handleTwitter}
+            data-testid={`share-tw-${article.id}`}
+            className="w-9 h-9 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-600 flex items-center justify-center transition"
+            title="مشاركة عبر تويتر"
+          >
+            <Twitter size={15} />
+          </button>
+          <button
+            onClick={handleCopy}
+            data-testid={`share-copy-${article.id}`}
+            className="w-9 h-9 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 flex items-center justify-center transition"
+            title="نسخ الرابط"
+          >
+            <Link2 size={15} />
+          </button>
+          {user && (
+            <button
+              onClick={handleLike}
+              data-testid={`article-like-btn-${article.id}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all ${
+                article.liked_by_me
+                  ? "bg-pink-100 text-pink-600"
+                  : "bg-white/70 text-[--c-deep]/60 hover:text-pink-500"
+              }`}
+            >
+              <Heart
+                size={16}
+                fill={article.liked_by_me ? "currentColor" : "none"}
+                className={popping ? "heart-pop" : ""}
+              />
+              <span className="text-xs font-bold">{article.likes_count}</span>
+            </button>
+          )}
+          {!user && article.likes_count > 0 && (
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 text-pink-500/70">
+              <Heart size={14} fill="currentColor" />
+              <span className="text-xs font-bold">{article.likes_count}</span>
+            </div>
+          )}
         </div>
       </div>
     </Link>
   );
 }
 
+const ARTICLES_CACHE_KEY = "namu_articles_cache";
+
 export default function HomePage() {
   const { user } = useAuth();
-  const [articles, setArticles] = useState([]);
+  const [articles, setArticles] = useState(() => {
+    // Hydrate immediately from cache so visitors don't see a blank page
+    try {
+      const cached = localStorage.getItem(ARTICLES_CACHE_KEY);
+      if (cached) {
+        const arr = JSON.parse(cached);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch {}
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("الكل");
 
@@ -230,9 +292,14 @@ export default function HomePage() {
     setLoading(true);
     try {
       const { data } = await api.get("/articles", { timeout: 6000 });
-      setArticles(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        setArticles(data);
+        try {
+          localStorage.setItem(ARTICLES_CACHE_KEY, JSON.stringify(data));
+        } catch {}
+      }
     } catch {
-      setArticles([]);
+      // keep cached articles on screen if backend is sleeping
     } finally {
       setLoading(false);
     }

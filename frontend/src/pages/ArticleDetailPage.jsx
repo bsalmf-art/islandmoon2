@@ -29,6 +29,18 @@ export default function ArticleDetailPage() {
 
   const load = async () => {
     setLoading(true);
+    // Try to hydrate from cached articles list first (so the page never feels broken)
+    try {
+      const cached = localStorage.getItem("namu_articles_cache");
+      if (cached) {
+        const arr = JSON.parse(cached);
+        const found = Array.isArray(arr) && arr.find((x) => x.id === id);
+        if (found) {
+          setArticle({ ...found, liked_by_me: false });
+          setComments([]);
+        }
+      }
+    } catch {}
     try {
       const [a, c] = await Promise.all([
         api.get(`/articles/${id}`, { timeout: 6000 }),
@@ -37,7 +49,7 @@ export default function ArticleDetailPage() {
       setArticle(a.data);
       setComments(c.data);
     } catch {
-      setArticle(false);
+      // keep cached article on screen
     } finally {
       setLoading(false);
     }
