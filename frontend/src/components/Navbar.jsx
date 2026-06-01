@@ -89,7 +89,12 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {/* Login/Register hidden from public — admin can access via /login URL directly */}
+              {location.pathname !== "/login" && (
+                <Link to="/login" data-testid="nav-login-btn" className="btn-pill btn-ghost">
+                  <UserIcon size={18} />
+                  <span>دخول</span>
+                </Link>
+              )}
             </>
           )}
         </div>
