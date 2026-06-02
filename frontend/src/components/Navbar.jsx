@@ -90,8 +90,9 @@ export default function Navbar() {
           ) : (
             <>
               {location.pathname !== "/login" && (
-                <Link to="/login" data-testid="nav-login-btn" className="btn-pill btn-ghost !px-3" title="دخول الإدارة">
+                <Link to="/login" data-testid="nav-login-btn" className="btn-pill btn-ghost" title="دخول الإدارة">
                   <UserIcon size={18} />
+                  <span>دخول</span>
                 </Link>
               )}
             </>
