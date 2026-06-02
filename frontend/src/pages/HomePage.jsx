@@ -444,21 +444,18 @@ export default function HomePage() {
           <div className="flex justify-center mb-4">
             <PenHandIcon size={72} color="#DB2777" />
           </div>
-          <h3 className="font-display text-xl mb-2">لا توجد مقالات بعد</h3>
-          <p className="text-[--c-deep]/60 mb-6">
-            كوني أول معلمة تشاركنا خبرتها التعليمية
+          <h3 className="font-display text-xl mb-2">المدونة في طور التحديث</h3>
+          <p className="text-[--c-deep]/60 mb-6 max-w-md mx-auto leading-7">
+            نعمل حاليًا على تجهيز المقالات. ستظهر هنا خلال لحظات — يرجى تحديث الصفحة بعد دقيقة، أو اضغطي على أحد التصنيفات أعلاه.
           </p>
-          {user && user !== false ? (
-            <Link to="/new" className="btn-pill btn-primary">
-              <PenLine size={18} />
-              <span>اكتبي مقالك الأول</span>
-            </Link>
-          ) : (
-            <Link to="/register" className="btn-pill btn-primary">
-              <BookOpen size={18} />
-              <span>انضمي وابدئي</span>
-            </Link>
-          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-pill btn-primary"
+            data-testid="reload-btn"
+          >
+            <BookOpen size={18} />
+            <span>تحديث الصفحة</span>
+          </button>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">

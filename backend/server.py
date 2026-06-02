@@ -130,6 +130,7 @@ class ArticleCreate(BaseModel):
     cover_emoji: str = Field(default="🌸", max_length=8)
     images: List[str] = Field(default_factory=list)
     links: List[ArticleLink] = Field(default_factory=list)
+    author_name: Optional[str] = Field(default=None, max_length=80)
 
 
 class ArticleUpdate(BaseModel):
@@ -160,6 +161,7 @@ class ArticleOut(BaseModel):
 
 class CommentCreate(BaseModel):
     content: str = Field(min_length=1, max_length=1000)
+    author_name: Optional[str] = Field(default=None, max_length=80)
 
 
 class CommentOut(BaseModel):
@@ -392,16 +394,25 @@ async def list_articles(current=Depends(get_current_user_optional)):
 
 
 @api_router.post("/articles", response_model=ArticleOut)
-async def create_article(payload: ArticleCreate, current=Depends(get_current_user)):
+async def create_article(payload: ArticleCreate, current=Depends(get_current_user_optional)):
+    if current:
+        author_id = current["id"]
+        author_name = current["name"]
+        author_color = current.get("avatar_color", "from-pink-400 to-fuchsia-500")
+    else:
+        # Anonymous public submission
+        author_id = "anonymous"
+        author_name = (getattr(payload, "author_name", None) or "زائرة").strip() or "زائرة"
+        author_color = "from-pink-400 to-fuchsia-500"
     doc = {
         "id": str(uuid.uuid4()),
         "title": payload.title.strip(),
         "content": payload.content.strip(),
         "category": payload.category.strip() or "عام",
         "cover_emoji": payload.cover_emoji or "🌸",
-        "author_id": current["id"],
-        "author_name": current["name"],
-        "author_color": current.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        "author_id": author_id,
+        "author_name": author_name,
+        "author_color": author_color,
         "images": payload.images or [],
         "links": [link.model_dump() for link in (payload.links or [])],
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -500,18 +511,26 @@ async def list_comments(article_id: str):
 
 @api_router.post("/articles/{article_id}/comments", response_model=CommentOut)
 async def add_comment(
-    article_id: str, payload: CommentCreate, current=Depends(get_current_user)
+    article_id: str, payload: CommentCreate, current=Depends(get_current_user_optional)
 ):
     article = await db.articles.find_one({"id": article_id}, {"_id": 0})
     if not article:
         raise HTTPException(status_code=404, detail="المقال غير موجود")
+    if current:
+        author_id = current["id"]
+        author_name = current["name"]
+        author_color = current.get("avatar_color", "from-pink-400 to-fuchsia-500")
+    else:
+        author_id = "anonymous"
+        author_name = (getattr(payload, "author_name", None) or "زائرة").strip() or "زائرة"
+        author_color = "from-pink-400 to-fuchsia-500"
     doc = {
         "id": str(uuid.uuid4()),
         "article_id": article_id,
         "content": payload.content.strip(),
-        "author_id": current["id"],
-        "author_name": current["name"],
-        "author_color": current.get("avatar_color", "from-pink-400 to-fuchsia-500"),
+        "author_id": author_id,
+        "author_name": author_name,
+        "author_color": author_color,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.comments.insert_one(doc)

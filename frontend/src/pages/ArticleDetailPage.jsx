@@ -67,13 +67,17 @@ export default function ArticleDetailPage() {
     setArticle((a) => ({ ...a, liked_by_me: data.liked, likes_count: data.likes_count }));
   };
 
+  const [commentName, setCommentName] = useState("");
+
   const submitComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     setSubmitting(true);
     setError("");
     try {
-      const { data } = await api.post(`/articles/${id}/comments`, { content: commentText });
+      const payload = { content: commentText };
+      if (!user && commentName.trim()) payload.author_name = commentName.trim();
+      const { data } = await api.post(`/articles/${id}/comments`, payload);
       setComments((arr) => [...arr, data]);
       setArticle((a) => ({ ...a, comments_count: (a.comments_count || 0) + 1 }));
       setCommentText("");
@@ -289,12 +293,49 @@ export default function ArticleDetailPage() {
             </div>
           </form>
         ) : (
-          <div className="card-glass p-6 mb-5 text-center" data-testid="login-to-comment">
-            <p className="text-[--c-deep]/70 mb-4">سجلي الدخول للمشاركة بالتعليقات</p>
-            <Link to="/login" className="btn-pill btn-primary">
-              دخول
-            </Link>
-          </div>
+          <form onSubmit={submitComment} className="card-glass p-5 mb-5" data-testid="comment-form-anon">
+            <div className="flex gap-3 items-start">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-300 to-fuchsia-400 flex items-center justify-center text-white font-bold shrink-0">
+                {(commentName.trim() || "ز").charAt(0)}
+              </div>
+              <div className="flex-1 space-y-2">
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={commentName}
+                  onChange={(e) => setCommentName(e.target.value)}
+                  className="input-field"
+                  placeholder="اسمكِ (اختياري — اتركيه فارغًا لتعلّقي كـ زائرة)"
+                  data-testid="comment-name-input"
+                />
+                <textarea
+                  rows={3}
+                  required
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  className="input-field"
+                  placeholder="شاركي رأيكِ أو أضيفي خبرتكِ…"
+                  data-testid="comment-input"
+                />
+                {error && (
+                  <div className="text-sm text-rose-700 bg-rose-100 border border-rose-200 rounded-xl px-3 py-2">
+                    {error}
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    data-testid="comment-submit-btn"
+                    className="btn-pill btn-primary"
+                  >
+                    <Send size={16} />
+                    <span>{submitting ? "جاري الإرسال…" : "إرسال التعليق"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
         )}
 
         {/* Comments list */}

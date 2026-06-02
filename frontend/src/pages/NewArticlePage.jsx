@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { formatApiError } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { Send, ArrowRight } from "lucide-react";
 import PenHandIcon from "../components/PenHandIcon";
 import MediaPicker from "../components/MediaPicker";
@@ -10,6 +11,7 @@ const EMOJIS = ["🌸", "✨", "📚", "🎨", "💡", "🌟", "🌷", "💗", "
 
 export default function NewArticlePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     title: "",
     content: "",
@@ -17,6 +19,7 @@ export default function NewArticlePage() {
     cover_emoji: "🌸",
     images: [],
     links: [],
+    author_name: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -101,6 +104,24 @@ export default function NewArticlePage() {
               ))}
             </div>
           </div>
+
+          {/* Name (anonymous only) */}
+          {!user && (
+            <div>
+              <label className="block text-sm font-bold text-[--c-deep] mb-2">
+                الاسم <span className="text-[--c-deep]/50 font-normal">(اختياري)</span>
+              </label>
+              <input
+                type="text"
+                maxLength={80}
+                value={form.author_name}
+                onChange={(e) => setForm({ ...form, author_name: e.target.value })}
+                className="input-field"
+                placeholder="أ. … (اتركيه فارغًا لتنشري كـ زائرة)"
+                data-testid="article-author-input"
+              />
+            </div>
+          )}
 
           {/* Title */}
           <div>
